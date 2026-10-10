@@ -3,54 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英作文 音読＆弱点克服ツール</title>
+  <title>英語音読学習プラットフォーム</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; max-width: 650px; margin: 0 auto; color: #333; background: #f8fafc; }
-    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.1rem; }
+    body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; padding: 20px 15px; max-width: 650px; margin: 0 auto; color: #1e293b; background: #f8fafc; line-height: 1.5; }
+    .card { background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #0f172a; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; font-size: 1.05rem; font-weight: 700; }
     
     .tab-container { display: flex; gap: 10px; margin-bottom: 15px; }
-    .tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: 2px solid #cbd5e1; background: #f1f5f9; color: #64748b; border-radius: 8px; cursor: pointer; text-align: center; }
-    .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 6px; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
 
-    input[type="text"] { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 5px; margin-top: 5px; }
-    textarea { width: 100%; height: 90px; font-size: 16px; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 5px; margin-top: 8px; }
-    select { width: 100%; padding: 10px; font-size: 15px; border-radius: 5px; border: 1px solid #cbd5e1; margin-top: 5px; }
+    label { font-weight: 600; font-size: 14px; color: #334155; }
+    input[type="text"] { width: 100%; padding: 10px; font-size: 15px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 6px; }
+    textarea { width: 100%; height: 90px; font-size: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 8px; font-family: inherit; }
+    select { width: 100%; padding: 10px; font-size: 15px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 6px; background-color: #ffffff; }
     
-    button { padding: 10px 18px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-right: 8px; margin-top: 5px; }
+    button { padding: 10px 18px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 8px; margin-top: 6px; transition: opacity 0.2s; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-success { background: #10b981; color: white; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-sub { background: #64748b; color: white; }
+    .btn-primary { background: #2563eb; color: #ffffff; }
+    .btn-success { background: #059669; color: #ffffff; }
+    .btn-danger { background: #dc2626; color: #ffffff; }
+    .btn-sub { background: #475569; color: #ffffff; }
     
-    .word { display: inline-block; padding: 3px 8px; margin: 3px; border-radius: 4px; font-size: 18px; font-weight: bold; }
-    .word-correct { background: #dcfce7; color: #166534; }
-    .word-incorrect { background: #fee2e2; color: #991b1b; }
+    .word { display: inline-block; padding: 3px 8px; margin: 3px; border-radius: 4px; font-size: 17px; font-weight: 600; }
+    .word-correct { background: #dcfce7; color: #15803d; }
+    .word-incorrect { background: #fee2e2; color: #b91c1c; }
     
-    .weak-card { display: flex; align-items: center; justify-content: space-between; background: #fff1f2; border: 1px solid #fecdd3; padding: 10px; border-radius: 6px; margin-top: 8px; }
+    .weak-card { display: flex; align-items: center; justify-content: space-between; background: #fff1f2; border: 1px solid #fecdd3; padding: 10px 14px; border-radius: 6px; margin-top: 8px; }
     .score-badge { font-size: 28px; font-weight: bold; color: #2563eb; }
-    #ocrStatus { font-weight: bold; color: #2563eb; margin-top: 8px; font-size: 14px; }
+    #ocrStatus { font-weight: 600; color: #2563eb; margin-top: 8px; font-size: 14px; }
   </style>
 </head>
 <body>
 
   <!-- 生徒情報入力 -->
-  <div class="card" style="background: #eff6ff; border: 1px solid #bfdbfe;">
-    <label for="studentId">👤 <strong>生徒ID (4桁の数字 / 例: 1120, 1459):</strong></label>
+  <div class="card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
+    <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
 
   <!-- モード選択 -->
   <div class="tab-container">
-    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">👨‍🏫 先生の課題</div>
-    <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">✏️ オリジナル原稿</div>
+    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</div>
+    <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">オリジナル原稿</div>
   </div>
 
   <!-- 原稿の用意 -->
   <div class="card">
-    <h2>原稿を用意する</h2>
+    <h2>原稿の準備</h2>
 
     <div id="modeTeacherArea">
       <label>練習する課題を選択してください:</label>
@@ -67,12 +68,12 @@
         </select>
       </div>
 
-      <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 10px;">
-        <label>📷 <strong>画像から文字を読み込む:</strong></label><br>
-        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:5px;">
+      <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+        <label>画像から文字を読み込む（OCR）:</label><br>
+        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:6px;">
         <div id="ocrStatus"></div>
       </div>
-      <label>英文の入力（手入力・編集可能）:</label>
+      <label>英文の確認・編集:</label>
     </div>
 
     <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
@@ -80,38 +81,38 @@
 
   <!-- お手本を聞いて練習 -->
   <div class="card">
-    <h2>お手本を聞いて練習する</h2>
+    <h2>音声再生（お手本）</h2>
     <div style="margin-bottom: 10px;">
-      <label>速度: </label>
+      <label>再生速度: </label>
       <select id="speechRate" style="width: auto; display: inline-block;">
         <option value="0.7">ゆっくり (0.7x)</option>
         <option value="0.9" selected>標準 (0.9x)</option>
         <option value="1.1">速め (1.1x)</option>
       </select>
     </div>
-    <button class="btn-primary" onclick="playFullAudio()">🔊 お手本を聞く</button>
+    <button class="btn-primary" onclick="playFullAudio()">お手本を聞く</button>
   </div>
 
   <!-- 音読を録音する -->
   <div class="card">
-    <h2>音読を録音する</h2>
-    <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">🎙️ 録音開始</button>
-    <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>⏹️ 録音終了</button>
+    <h2>音読録音</h2>
+    <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
+    <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
     <p id="recStatus" style="color: #64748b; font-size: 14px; margin-top: 10px; min-height: 20px;"></p>
   </div>
 
   <!-- 正確さを確認する -->
   <div class="card" id="resultArea" style="display:none;">
-    <h2>正確さを確認する</h2>
+    <h2>評価結果</h2>
     <p><strong>全体の一致率: <span id="scoreVal" class="score-badge">0</span>%</strong></p>
-    <p style="margin-bottom: 5px;"><strong>単語チェック:</strong> （緑＝OK / 赤＝もう一度）</p>
+    <p style="margin-bottom: 5px;"><strong>単語判定結果:</strong> （緑：一致 / 赤：不一致・未判定）</p>
     <div id="wordDisplay" style="line-height: 2.0;"></div>
   </div>
 
   <!-- 苦手単語トレーニング -->
   <div class="card" id="weakArea" style="display:none;">
-    <h2>苦手単語の集中トレーニング</h2>
-    <p style="font-size: 13px; color: #64748b;">うまく認識されなかった単語です。個別に練習してみましょう！</p>
+    <h2>苦手単語トレーニング</h2>
+    <p style="font-size: 13px; color: #64748b;">認識されなかった単語の個別トレーニングです。</p>
     <div id="weakWordsList"></div>
   </div>
 
@@ -137,7 +138,7 @@
           const taskSelect = document.getElementById('taskSelect');
           taskSelect.innerHTML = '';
           if (teacherTaskList.length === 0) {
-            taskSelect.innerHTML = '<option value="">登録された教員課題がありません</option>';
+            taskSelect.innerHTML = '<option value="">登録された配信課題がありません</option>';
           } else {
             teacherTaskList.forEach((t, index) => {
               const opt = document.createElement('option');
@@ -164,7 +165,7 @@
         })
         .catch(err => {
           console.error(err);
-          document.getElementById('taskSelect').innerHTML = '<option value="">データ読み込み失敗</option>';
+          document.getElementById('taskSelect').innerHTML = '<option value="">データの読み込みに失敗しました</option>';
         });
     };
 
@@ -200,20 +201,20 @@
       const file = input.files[0];
       const status = document.getElementById('ocrStatus');
       
-      status.innerText = '⏳ 画像から文字を読み取っています... (数秒かかります)';
+      status.innerText = '画像から文字を読み取っています...（数秒かかります）';
 
       Tesseract.recognize(file, 'eng', {
         logger: m => {
           if(m.status === 'recognizing text') {
-            status.innerText = `⏳ 読み取り中... ${Math.round(m.progress * 100)}%`;
+            status.innerText = `読み取り中... ${Math.round(m.progress * 100)}%`;
           }
         }
       }).then(({ data: { text } }) => {
-        status.innerText = '✅ 読み取り完了！修正が必要な場合は直接編集してください。';
+        status.innerText = '読み取りが完了しました。必要に応じて文字を修正してください。';
         const cleanText = text.replace(/\n+/g, ' ').trim();
         document.getElementById('sentence').value = cleanText;
       }).catch(err => {
-        status.innerText = '❌ 読み取りに失敗しました。別の写真でお試しください。';
+        status.innerText = '画像の読み取りに失敗しました。別の画像でお試しください。';
       });
     }
 
@@ -236,7 +237,7 @@
     function startFullRecognition() {
       const studentId = document.getElementById('studentId').value.trim();
       if (!studentId || studentId.length < 3) {
-        alert('生徒ID（4桁）を正しく入力してください。');
+        alert('生徒ID（半角4桁）を正しく入力してください。');
         return;
       }
 
@@ -244,12 +245,12 @@
       if (!originalText) return alert('英文を入力してください');
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert('ブラウザが対応していません (Chrome推奨)');
+      if (!SpeechRecognition) return alert('ブラウザが音声認識に対応していません (Google Chrome推奨)');
 
       activeRecognition = new SpeechRecognition();
       activeRecognition.lang = 'en-US';
       
-      document.getElementById('recStatus').innerText = '🎙️ 録音中... 声を出して音読してください。（終わったら「録音終了」を押します）';
+      document.getElementById('recStatus').innerText = '録音中... 声を出して音読してください。（終了時は「録音終了」を押します）';
       document.getElementById('btnRecStart').disabled = true;
       document.getElementById('btnRecStop').disabled = false;
 
@@ -273,7 +274,7 @@
 
     function stopFullRecognition() {
       if (activeRecognition) {
-        document.getElementById('recStatus').innerText = '⏳ 判定中...';
+        document.getElementById('recStatus').innerText = '判定中...';
         activeRecognition.stop();
       }
     }
@@ -284,7 +285,7 @@
     }
 
     function analyzeSpeech(original, spoken) {
-      document.getElementById('recStatus').innerText = '✅ 判定が完了しました！下の「正確さを確認する」をご覧ください。';
+      document.getElementById('recStatus').innerText = '判定が完了しました。下部の評価結果を確認してください。';
       
       const origWords = original.match(/[a-zA-Z0-9']+/g) || [];
       const spokenWords = (spoken.match(/[a-zA-Z0-9']+/g) || []).map(w => w.toLowerCase());
@@ -324,7 +325,7 @@
       renderWeakWords();
 
       const studentId = document.getElementById('studentId').value.trim();
-      const modeName = currentMode === 'teacher' ? '教員課題' : 'オリジナル';
+      const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
       
       let taskName = '';
       if (currentMode === 'teacher') {
@@ -365,10 +366,10 @@
         const div = document.createElement('div');
         div.className = 'weak-card';
         div.innerHTML = `
-          <strong style="font-size: 18px;">${word}</strong>
+          <strong style="font-size: 17px; color: #0f172a;">${word}</strong>
           <div>
-            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">🔊 聞く</button>
-            <button class="btn-primary" onclick="testSingleWord('${word}', this)">🎙️ テスト</button>
+            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">音声を聞く</button>
+            <button class="btn-primary" onclick="testSingleWord('${word}', this)">発音テスト</button>
             <span class="test-result" style="margin-left:8px; font-weight:bold;"></span>
           </div>
         `;
@@ -382,21 +383,21 @@
       recognition.lang = 'en-US';
 
       const resultSpan = btnElement.nextElementSibling;
-      resultSpan.innerText = '聞取り中...';
+      resultSpan.innerText = '聞き取り中...';
       resultSpan.style.color = '#64748b';
 
       recognition.onresult = (event) => {
         const spoken = event.results[0][0].transcript.toLowerCase().trim();
         if (spoken.includes(targetWord.toLowerCase())) {
-          resultSpan.innerText = '⭕ PERFECT!';
-          resultSpan.style.color = '#166534';
+          resultSpan.innerText = '正解 (PERFECT)';
+          resultSpan.style.color = '#15803d';
         } else {
-          resultSpan.innerText = `❌ (${spoken})`;
-          resultSpan.style.color = '#991b1b';
+          resultSpan.innerText = `不一致 (${spoken})`;
+          resultSpan.style.color = '#b91c1c';
         }
       };
 
-      recognition.onerror = () => { resultSpan.innerText = '❌ エラー'; };
+      recognition.onerror = () => { resultSpan.innerText = 'エラー'; };
       recognition.start();
     }
   </script>
