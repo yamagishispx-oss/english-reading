@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英作文 音読＆弱点克服ツール</title>
+  <!-- OCR用のライブラリ (Tesseract.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; max-width: 650px; margin: 0 auto; color: #333; background: #f8fafc; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; font-size: 1.1rem; }
+    
+    .tab-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: 2px solid #cbd5e1; background: #f1f5f9; color: #64748b; border-radius: 8px; cursor: pointer; text-align: center; }
+    .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+    textarea { width: 100%; height: 90px; font-size: 16px; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 5px; margin-top: 8px; }
+    select { width: 100%; padding: 10px; font-size: 15px; border-radius: 5px; border: 1px solid #cbd5e1; margin-top: 5px; }
+    
+    button { padding: 9px 16px; font-size: 14px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 5px; margin-top: 5px; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-sub { background: #64748b; color: white; }
+    
+    .word { display: inline-block; padding: 2px 6px; margin: 2px; border-radius: 4px; font-size: 18px; font-weight: bold; }
+    .word-correct { background: #dcfce7; color: #166534; }
+    .word-incorrect { background: #fee2e2; color: #991b1b; }
+    
+    .weak-card { display: flex; align-items: center; justify-content: space-between; background: #fff1f2; border: 1px solid #fecdd3; padding: 10px; border-radius: 6px; margin-top: 8px; }
+    .score-badge { font-size: 24px; font-weight: bold; color: #2563eb; }
+    #ocrStatus { font-weight: bold; color: #2563eb; margin-top: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <!-- モード選択 -->
+  <div class="tab-container">
+    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</div>
+    <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">オリジナル原稿</div>
+  </div>
+
+  <!-- ① 原稿の用意 -->
+  <div class="card">
+    <h2>① 原稿の選択・入力</h2>
+
+    <div id="modeTeacherArea">
+      <label>練習する課題を選択してください:</label>
+      <select id="taskSelect" onchange="onTaskChange()">
+        <option value="">読み込み中...</option>
+      </select>
+    </div>
+
+    <div id="modeOriginalArea" style="display:none;">
+      <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 10px;">
+        <label>📷 <strong>画像から文字を読み込む:</strong></label><br>
+        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:5px;">
+        <div id="ocrStatus"></div>
+      </div>
+      <label>英文の入力（手入力・編集可能）:</label>
+    </div>
+
+    <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
+  </div>
+
+  <!-- ② & ③ お手本を聞く・練習 -->
+  <div class="card">
+    <h2>② & ③ お手本を聞いて練習</h2>
+    <label>速度: </label>
+    <select id="speechRate" style="width: auto; display: inline-block;">
+      <option value="0.7">ゆっくり (0.7x)</option>
+      <option value="0.9" selected>標準 (0.9x)</option>
+      <option value="1.1">速め (1.1x)</option>
+    </select>
+    <button class="btn-primary" onclick="playFullAudio()">🔊 お手本を聞く</button>
+  </div>
+
+  <!-- ④ & ⑤ 録音・採点 -->
+  <div class="card">
+    <h2>④ & ⑤ 録音して正確さを確認</h2>
+    <button class="btn-success" onclick="startFullRecognition()">🎙️ 音読を録音・判定する</button>
+    <p id="recStatus" style="color: #64748b; font-size: 14px;"></p>
+    
+    <div id="resultArea" style="display:none; margin-top: 15px;">
+      <p><strong>全体の一致率: <span id="scoreVal" class="score-badge">0</span>%</strong></p>
+      <p>単語チェック（緑＝OK / 赤＝もう一度）:</p>
+      <div id="wordDisplay" style="line-height: 1.8;"></div>
+    </div>
+  </div>
+
+  <!-- ⑥ 苦手単語トレーニング -->
+  <div class="card" id="weakArea" style="display:none;">
+    <h2>⑥ 苦手単語の集中トレーニング</h2>
+    <p style="font-size: 13px; color: #64748b;">認識されなかった単語です。個別に練習してみましょう！</p>
+    <div id="weakWordsList"></div>
+  </div>
+
+  <script>
+    // ⬇️ ここに取得したGASのURLを貼り付けてください
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwfmoDpGjFURxVHEkz_eB-OASBCbu5dOsq-puymuVmdCKMLIR-zAjYelNLGjERnElC7/exec';
+
+    let currentMode = 'teacher';
+    let teacherTaskList = [];
+    let globalWeakWords = [];
+
+    // 初期化：教員課題の読み込み (API呼び出し)
+    window.onload = () => {
+      fetch(`${GAS_API_URL}?action=getTasks`)
+        .then(res => res.json())
+        .then(tasks => {
+          teacherTaskList = tasks;
+          const select = document.getElementById('taskSelect');
+          select.innerHTML = '';
+          
+          if (!tasks || tasks.length === 0) {
+            select.innerHTML = '<option value="">登録された課題がありません</option>';
+            return;
+          }
+
+          tasks.forEach((t, index) => {
+            const opt = document.createElement('option');
+            opt.value = index;
+            opt.innerText = t.title;
+            select.appendChild(opt);
+          });
+          onTaskChange();
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('taskSelect').innerHTML = '<option value="">課題の読み込みに失敗しました</option>';
+        });
+    };
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.getElementById('tabTeacher').className = 'tab-btn ' + (mode === 'teacher' ? 'active' : '');
+      document.getElementById('tabOriginal').className = 'tab-btn ' + (mode === 'original' ? 'active' : '');
+      
+      document.getElementById('modeTeacherArea').style.display = mode === 'teacher' ? 'block' : 'none';
+      document.getElementById('modeOriginalArea').style.display = mode === 'original' ? 'block' : 'none';
+      
+      if (mode === 'teacher') {
+        onTaskChange();
+      } else {
+        document.getElementById('sentence').value = '';
+      }
+    }
+
+    function onTaskChange() {
+      const idx = document.getElementById('taskSelect').value;
+      if (idx !== "" && teacherTaskList[idx]) {
+        document.getElementById('sentence').value = teacherTaskList[idx].text;
+      }
+    }
+
+    function processImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const status = document.getElementById('ocrStatus');
+      
+      status.innerText = '⏳ 画像から文字を読み取っています... (数秒かかります)';
+
+      Tesseract.recognize(file, 'eng', {
+        logger: m => {
+          if(m.status === 'recognizing text') {
+            status.innerText = `⏳ 読み取り中... ${Math.round(m.progress * 100)}%`;
+          }
+        }
+      }).then(({ data: { text } }) => {
+        status.innerText = '✅ 読み取り完了！修正が必要な場合は直接編集してください。';
+        const cleanText = text.replace(/\n+/g, ' ').trim();
+        document.getElementById('sentence').value = cleanText;
+      }).catch(err => {
+        status.innerText = '❌ 読み取りに失敗しました。別の写真でお試しください。';
+      });
+    }
+
+    function playAudioText(text, rate = 0.9) {
+      if (!text) return;
+      speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'en-US';
+      uttr.rate = parseFloat(rate);
+      speechSynthesis.speak(uttr);
+    }
+
+    function playFullAudio() {
+      const text = document.getElementById('sentence').value.trim();
+      const rate = document.getElementById('speechRate').value;
+      if (!text) return alert('英文を入力してください');
+      playAudioText(text, rate);
+    }
+
+    function startFullRecognition() {
+      const originalText = document.getElementById('sentence').value.trim();
+      if (!originalText) return alert('英文を入力してください');
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return alert('ブラウザが対応していません (Chrome推奨)');
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      
+      document.getElementById('recStatus').innerText = '🎙️ 録音中... お手本通りに音読してください。';
+
+      recognition.onresult = (event) => {
+        document.getElementById('recStatus').innerText = '';
+        const spokenText = event.results[0][0].transcript;
+        analyzeSpeech(originalText, spokenText);
+      };
+
+      recognition.onerror = (event) => {
+        document.getElementById('recStatus').innerText = 'エラーが発生しました: ' + event.error;
+      };
+
+      recognition.start();
+    }
+
+    function analyzeSpeech(original, spoken) {
+      const origWords = original.match(/[a-zA-Z0-9']+/g) || [];
+      const spokenWords = (spoken.match(/[a-zA-Z0-9']+/g) || []).map(w => w.toLowerCase());
+
+      const wordDisplay = document.getElementById('wordDisplay');
+      wordDisplay.innerHTML = '';
+      globalWeakWords = [];
+      let matchCount = 0;
+
+      let spokenIndex = 0;
+      origWords.forEach(word => {
+        const cleanWord = word.toLowerCase();
+        const foundPos = spokenWords.indexOf(cleanWord, spokenIndex);
+
+        const span = document.createElement('span');
+        span.className = 'word ';
+
+        if (foundPos !== -1) {
+          span.className += 'word-correct';
+          span.innerText = word;
+          matchCount++;
+          spokenIndex = foundPos + 1;
+        } else {
+          span.className += 'word-incorrect';
+          span.innerText = word;
+          if (!globalWeakWords.includes(cleanWord)) {
+            globalWeakWords.push(cleanWord);
+          }
+        }
+        wordDisplay.appendChild(span);
+      });
+
+      const score = origWords.length > 0 ? Math.round((matchCount / origWords.length) * 100) : 0;
+      document.getElementById('scoreVal').innerText = score;
+      document.getElementById('resultArea').style.display = 'block';
+
+      renderWeakWords();
+
+      const modeName = currentMode === 'teacher' ? '教員課題' : 'オリジナル';
+      let taskName = '';
+      if (currentMode === 'teacher') {
+        const select = document.getElementById('taskSelect');
+        taskName = select.options[select.selectedIndex]?.text || '';
+      }
+
+      // データの保存 (API送信)
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          mode: modeName,
+          taskName: taskName,
+          originalText: original,
+          spokenText: spoken,
+          score: score,
+          weakWords: globalWeakWords
+        })
+      });
+    }
+
+    function renderWeakWords() {
+      const weakArea = document.getElementById('weakArea');
+      const container = document.getElementById('weakWordsList');
+      container.innerHTML = '';
+
+      if (globalWeakWords.length === 0) {
+        weakArea.style.display = 'none';
+        return;
+      }
+
+      weakArea.style.display = 'block';
+      globalWeakWords.forEach(word => {
+        const div = document.createElement('div');
+        div.className = 'weak-card';
+        div.innerHTML = `
+          <strong style="font-size: 18px;">${word}</strong>
+          <div>
+            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">🔊 聞く</button>
+            <button class="btn-primary" onclick="testSingleWord('${word}', this)">🎙️ テスト</button>
+            <span class="test-result" style="margin-left:8px; font-weight:bold;"></span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function testSingleWord(targetWord, btnElement) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+
+      const resultSpan = btnElement.nextElementSibling;
+      resultSpan.innerText = '聞取り中...';
+      resultSpan.style.color = '#64748b';
+
+      recognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.toLowerCase().trim();
+        if (spoken.includes(targetWord.toLowerCase())) {
+          resultSpan.innerText = '⭕ PERFECT!';
+          resultSpan.style.color = '#166534';
+        } else {
+          resultSpan.innerText = `❌ (${spoken})`;
+          resultSpan.style.color = '#991b1b';
+        }
+      };
+
+      recognition.onerror = () => { resultSpan.innerText = '❌ エラー'; };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
+
