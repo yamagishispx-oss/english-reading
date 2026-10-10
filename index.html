@@ -119,7 +119,7 @@
   </div>
 
   <script>
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbySqftLrDJsJ2MqNWHN0DDzXMbHVT9hLdHpbB1KlvTGl_Ndac9OD5mZ2EAI73F0yvs/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwfmoDpGjFURxVHEkz_eB-OASBCbu5dOsq-puymuVmdCKMLIR-zAjYelNLGjERnElC7/exec';
 
     let currentMode = 'teacher';
     let teacherTaskList = [];
@@ -202,3 +202,169 @@
     }
 
     function processImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const status = document.getElementById('ocrStatus');
+      
+      status.innerText = '画像から文字を読み取っています...（数秒かかります）';
+
+      Tesseract.recognize(file, 'eng', {
+        logger: m => {
+          if(m.status === 'recognizing text') {
+            status.innerText = `読み取り中... ${Math.round(m.progress * 100)}%`;
+          }
+        }
+      }).then(({ data: { text } }) => {
+        status.innerText = '読み取りが完了しました。必要に応じて文字を修正してください。';
+        const cleanText = text.replace(/\n+/g, ' ').trim();
+        document.getElementById('sentence').value = cleanText;
+      }).catch(err => {
+        status.innerText = '画像の読み取りに失敗しました。別の画像でお試しください。';
+      });
+    }
+
+    function playAudioText(text, rate = 0.9) {
+      if (!text) return;
+      speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'en-US';
+      uttr.rate = parseFloat(rate);
+      speechSynthesis.speak(uttr);
+    }
+
+    function playFullAudio() {
+      const text = document.getElementById('sentence').value.trim();
+      const rate = document.getElementById('speechRate').value;
+      if (!text) return alert('英文を入力してください');
+
+      if (speechSynthesis.paused && speechSynthesis.speaking) {
+        speechSynthesis.resume();
+        updateAudioButtons('playing');
+        return;
+      }
+
+      speechSynthesis.cancel();
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.lang = 'en-US';
+      currentUtterance.rate = parseFloat(rate);
+
+      currentUtterance.onend = () => { updateAudioButtons('stopped'); };
+      currentUtterance.onerror = () => { updateAudioButtons('stopped'); };
+
+      speechSynthesis.speak(currentUtterance);
+      updateAudioButtons('playing');
+    }
+
+    function pauseAudio() {
+      if (speechSynthesis.speaking && !speechSynthesis.paused) {
+        speechSynthesis.pause();
+        updateAudioButtons('paused');
+      }
+    }
+
+    function stopAudio() {
+      speechSynthesis.cancel();
+      updateAudioButtons('stopped');
+    }
+
+    function updateAudioButtons(state) {
+      const btnPlay = document.getElementById('btnAudioPlay');
+      const btnPause = document.getElementById('btnAudioPause');
+      const btnStop = document.getElementById('btnAudioStop');
+
+      if (state === 'playing') {
+        btnPlay.innerText = '再生中';
+        btnPlay.disabled = true;
+        btnPause.innerText = '一時停止';
+        btnPause.disabled = false;
+        btnStop.disabled = false;
+      } else if (state === 'paused') {
+        btnPlay.innerText = '再開';
+        btnPlay.disabled = false;
+        btnPause.innerText = '一時停止中';
+        btnPause.disabled = true;
+        btnStop.disabled = false;
+      } else {
+        btnPlay.innerText = '再生';
+        btnPlay.disabled = false;
+        btnPause.innerText = '一時停止';
+        btnPause.disabled = true;
+        btnStop.disabled = true;
+      }
+    }
+
+    function startFullRecognition() {
+      stopAudio();
+      const studentId = document.getElementById('studentId').value.trim();
+      if (!studentId || studentId.length < 3) {
+        alert('生徒ID（半角4桁）を正しく入力してください。');
+        return;
+      }
+
+      const originalText = document.getElementById('sentence').value.trim();
+      if (!originalText) return alert('英文を入力してください');
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return alert('ブラウザが音声認識に対応していません (Google Chrome推奨)');
+
+      activeRecognition = new SpeechRecognition();
+      activeRecognition.lang = 'en-US';
+      
+      document.getElementById('recStatus').innerText = '録音中... 声を出して音読してください。（終了時は「録音終了」を押します）';
+      document.getElementById('btnRecStart').disabled = true;
+      document.getElementById('btnRecStop').disabled = false;
+
+      activeRecognition.onresult = (event) => {
+        resetRecUi();
+        const spokenText = event.results[0][0].transcript;
+        analyzeSpeech(originalText, spokenText);
+      };
+
+      activeRecognition.onerror = (event) => {
+        resetRecUi();
+        document.getElementById('recStatus').innerText = 'エラーが発生しました: ' + event.error;
+      };
+
+      activeRecognition.onend = () => {
+        resetRecUi();
+      };
+
+      activeRecognition.start();
+    }
+
+    function stopFullRecognition() {
+      if (activeRecognition) {
+        document.getElementById('recStatus').innerText = '判定中...';
+        activeRecognition.stop();
+      }
+    }
+
+    function resetRecUi() {
+      document.getElementById('btnRecStart').disabled = false;
+      document.getElementById('btnRecStop').disabled = true;
+    }
+
+    function analyzeSpeech(original, spoken) {
+      document.getElementById('recStatus').innerText = '判定が完了しました。下部の評価結果を確認してください。';
+      
+      const origWords = original.match(/[a-zA-Z0-9']+/g) || [];
+      const spokenWords = (spoken.match(/[a-zA-Z0-9']+/g) || []).map(w => w.toLowerCase());
+
+      const wordDisplay = document.getElementById('wordDisplay');
+      wordDisplay.innerHTML = '';
+      globalWeakWords = [];
+      let matchCount = 0;
+
+      let spokenIndex = 0;
+      origWords.forEach(word => {
+        const cleanWord = word.toLowerCase();
+        const foundPos = spokenWords.indexOf(cleanWord, spokenIndex);
+
+        const span = document.createElement('span');
+        span.className = 'word ';
+
+        if (foundPos !== -1) {
+          span.className += 'word-correct';
+          span.innerText = word;
+          matchCount++;
+          spokenIndex = foundPos
