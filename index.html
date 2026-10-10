@@ -130,3 +130,75 @@
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
+      if (savedId) {
+        document.getElementById('studentId').value = savedId;
+      }
+
+      fetch(`${GAS_API_URL}?action=getTasks`)
+        .then(res => res.json())
+        .then(data => {
+          teacherTaskList = data.teacherTasks || [];
+          const taskSelect = document.getElementById('taskSelect');
+          taskSelect.innerHTML = '';
+          if (teacherTaskList.length === 0) {
+            taskSelect.innerHTML = '<option value="">登録された配信課題がありません</option>';
+          } else {
+            teacherTaskList.forEach((t, index) => {
+              const opt = document.createElement('option');
+              opt.value = index;
+              opt.innerText = t.title;
+              taskSelect.appendChild(opt);
+            });
+            onTaskChange();
+          }
+
+          originalCategoryList = data.originalCategories || [];
+          const origSelect = document.getElementById('originalCategorySelect');
+          origSelect.innerHTML = '';
+          if (originalCategoryList.length === 0) {
+            origSelect.innerHTML = '<option value="">登録された単元がありません</option>';
+          } else {
+            originalCategoryList.forEach(cat => {
+              const opt = document.createElement('option');
+              opt.value = cat;
+              opt.innerText = cat;
+              origSelect.appendChild(opt);
+            });
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('taskSelect').innerHTML = '<option value="">データの読み込みに失敗しました</option>';
+        });
+    };
+
+    function saveStudentId() {
+      const val = document.getElementById('studentId').value;
+      localStorage.setItem('english_app_student_id', val);
+    }
+
+    function switchMode(mode) {
+      stopAudio();
+      currentMode = mode;
+      document.getElementById('tabTeacher').className = 'tab-btn ' + (mode === 'teacher' ? 'active' : '');
+      document.getElementById('tabOriginal').className = 'tab-btn ' + (mode === 'original' ? 'active' : '');
+      
+      document.getElementById('modeTeacherArea').style.display = mode === 'teacher' ? 'block' : 'none';
+      document.getElementById('modeOriginalArea').style.display = mode === 'original' ? 'block' : 'none';
+      
+      if (mode === 'teacher') {
+        onTaskChange();
+      } else {
+        document.getElementById('sentence').value = '';
+      }
+    }
+
+    function onTaskChange() {
+      stopAudio();
+      const idx = document.getElementById('taskSelect').value;
+      if (idx !== "" && teacherTaskList[idx]) {
+        document.getElementById('sentence').value = teacherTaskList[idx].text;
+      }
+    }
+
+    function processImage(input) {
