@@ -44,7 +44,7 @@
 
   <!-- モード選択 -->
   <div class="tab-container">
-    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</div>
+    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">👨‍🏫 先生の課題</div>
     <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">✏️ オリジナル原稿</div>
   </div>
 
@@ -382,7 +382,7 @@
       recognition.lang = 'en-US';
 
       const resultSpan = btnElement.nextElementSibling;
-      resultSpan.innerText = '聞き取り中...';
+      resultSpan.innerText = '聞取り中...';
       resultSpan.style.color = '#64748b';
 
       recognition.onresult = (event) => {
