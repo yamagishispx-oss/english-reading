@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英作文音読アプリ</title>
-  <!-- OCR用のライブラリ (Tesseract.js) -->
+  <title>英作文音読練習アプリ</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 15px; max-width: 650px; margin: 0 auto; color: #333; background: #f8fafc; }
@@ -39,13 +38,13 @@
 
   <!-- 生徒情報入力 -->
   <div class="card" style="background: #eff6ff; border: 1px solid #bfdbfe;">
-    <label for="studentId">👤 <strong>生徒ID (4桁の数字 / 例: 1120, 1459):</strong></label>
+    <label for="studentId">👤 <strong>生徒ID (4桁の数字 / 学年・クラス・出席番号を半角数字で入力してください):</strong></label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
 
   <!-- モード選択 -->
   <div class="tab-container">
-    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">👨‍🏫 先生の課題</div>
+    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</div>
     <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">✏️ オリジナル原稿</div>
   </div>
 
@@ -117,8 +116,9 @@
   </div>
 
   <script>
-    // ⬇️ ここに取得したGASのURLを貼り付けてください
+    // ▼▼▼ ここを必ずご自身のGASのURLに書き換えてください ▼▼▼
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwfmoDpGjFURxVHEkz_eB-OASBCbu5dOsq-puymuVmdCKMLIR-zAjYelNLGjERnElC7/exec';
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     let currentMode = 'teacher';
     let teacherTaskList = [];
@@ -126,7 +126,6 @@
     let globalWeakWords = [];
     let activeRecognition = null;
 
-    // 初期化：課題リスト・単元リストの取得 & 生徒ID復元
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
       if (savedId) {
@@ -136,7 +135,6 @@
       fetch(`${GAS_API_URL}?action=getTasks`)
         .then(res => res.json())
         .then(data => {
-          // 教員課題のセット
           teacherTaskList = data.teacherTasks || [];
           const taskSelect = document.getElementById('taskSelect');
           taskSelect.innerHTML = '';
@@ -152,7 +150,6 @@
             onTaskChange();
           }
 
-          // オリジナル単元のセット
           originalCategoryList = data.originalCategories || [];
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
@@ -249,162 +246,4 @@
       if (!originalText) return alert('英文を入力してください');
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert('ブラウザが対応していません (Chrome推奨)');
-
-      activeRecognition = new SpeechRecognition();
-      activeRecognition.lang = 'en-US';
-      
-      document.getElementById('recStatus').innerText = '🎙️ 録音中... 声を出して音読してください。（終わったら「録音終了」を押します）';
-      document.getElementById('btnRecStart').disabled = true;
-      document.getElementById('btnRecStop').disabled = false;
-
-      activeRecognition.onresult = (event) => {
-        resetRecUi();
-        const spokenText = event.results[0][0].transcript;
-        analyzeSpeech(originalText, spokenText);
-      };
-
-      activeRecognition.onerror = (event) => {
-        resetRecUi();
-        document.getElementById('recStatus').innerText = 'エラーが発生しました: ' + event.error;
-      };
-
-      activeRecognition.onend = () => {
-        resetRecUi();
-      };
-
-      activeRecognition.start();
-    }
-
-    function stopFullRecognition() {
-      if (activeRecognition) {
-        document.getElementById('recStatus').innerText = '⏳ 判定中...';
-        activeRecognition.stop();
-      }
-    }
-
-    function resetRecUi() {
-      document.getElementById('btnRecStart').disabled = false;
-      document.getElementById('btnRecStop').disabled = true;
-    }
-
-    function analyzeSpeech(original, spoken) {
-      document.getElementById('recStatus').innerText = '✅ 判定が完了しました！下の「正確さを確認する」をご覧ください。';
-      
-      const origWords = original.match(/[a-zA-Z0-9']+/g) || [];
-      const spokenWords = (spoken.match(/[a-zA-Z0-9']+/g) || []).map(w => w.toLowerCase());
-
-      const wordDisplay = document.getElementById('wordDisplay');
-      wordDisplay.innerHTML = '';
-      globalWeakWords = [];
-      let matchCount = 0;
-
-      let spokenIndex = 0;
-      origWords.forEach(word => {
-        const cleanWord = word.toLowerCase();
-        const foundPos = spokenWords.indexOf(cleanWord, spokenIndex);
-
-        const span = document.createElement('span');
-        span.className = 'word ';
-
-        if (foundPos !== -1) {
-          span.className += 'word-correct';
-          span.innerText = word;
-          matchCount++;
-          spokenIndex = foundPos + 1;
-        } else {
-          span.className += 'word-incorrect';
-          span.innerText = word;
-          if (!globalWeakWords.includes(cleanWord)) {
-            globalWeakWords.push(cleanWord);
-          }
-        }
-        wordDisplay.appendChild(span);
-      });
-
-      const score = origWords.length > 0 ? Math.round((matchCount / origWords.length) * 100) : 0;
-      document.getElementById('scoreVal').innerText = score;
-      document.getElementById('resultArea').style.display = 'block';
-
-      renderWeakWords();
-
-      const studentId = document.getElementById('studentId').value.trim();
-      const modeName = currentMode === 'teacher' ? '教員課題' : 'オリジナル';
-      
-      let taskName = '';
-      if (currentMode === 'teacher') {
-        const select = document.getElementById('taskSelect');
-        taskName = select.options[select.selectedIndex]?.text || '課題未選択';
-      } else {
-        const select = document.getElementById('originalCategorySelect');
-        taskName = select.options[select.selectedIndex]?.value || 'オリジナル英作文';
-      }
-
-      // データの保存 (API送信)
-      fetch(GAS_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          studentId: studentId,
-          mode: modeName,
-          taskName: taskName,
-          originalText: original,
-          spokenText: spoken,
-          score: score,
-          weakWords: globalWeakWords
-        })
-      });
-    }
-
-    function renderWeakWords() {
-      const weakArea = document.getElementById('weakArea');
-      const container = document.getElementById('weakWordsList');
-      container.innerHTML = '';
-
-      if (globalWeakWords.length === 0) {
-        weakArea.style.display = 'none';
-        return;
-      }
-
-      weakArea.style.display = 'block';
-      globalWeakWords.forEach(word => {
-        const div = document.createElement('div');
-        div.className = 'weak-card';
-        div.innerHTML = `
-          <strong style="font-size: 18px;">${word}</strong>
-          <div>
-            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">🔊 聞く</button>
-            <button class="btn-primary" onclick="testSingleWord('${word}', this)">🎙️ テスト</button>
-            <span class="test-result" style="margin-left:8px; font-weight:bold;"></span>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function testSingleWord(targetWord, btnElement) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-
-      const resultSpan = btnElement.nextElementSibling;
-      resultSpan.innerText = '聞取り中...';
-      resultSpan.style.color = '#64748b';
-
-      recognition.onresult = (event) => {
-        const spoken = event.results[0][0].transcript.toLowerCase().trim();
-        if (spoken.includes(targetWord.toLowerCase())) {
-          resultSpan.innerText = '⭕ PERFECT!';
-          resultSpan.style.color = '#166534';
-        } else {
-          resultSpan.innerText = `❌ (${spoken})`;
-          resultSpan.style.color = '#991b1b';
-        }
-      };
-
-      recognition.onerror = () => { resultSpan.innerText = '❌ エラー'; };
-      recognition.start();
-    }
-  </script>
-</body>
-</html>
+      if (!SpeechRecognition) return alert('ブラウザが対応していません (Chrome
