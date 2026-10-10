@@ -367,4 +367,100 @@
           span.className += 'word-correct';
           span.innerText = word;
           matchCount++;
-          spokenIndex = foundPos
+          spokenIndex = foundPos + 1;
+        } else {
+          span.className += 'word-incorrect';
+          span.innerText = word;
+          if (!globalWeakWords.includes(cleanWord)) {
+            globalWeakWords.push(cleanWord);
+          }
+        }
+        wordDisplay.appendChild(span);
+      });
+
+      const score = origWords.length > 0 ? Math.round((matchCount / origWords.length) * 100) : 0;
+      document.getElementById('scoreVal').innerText = score;
+      document.getElementById('resultArea').style.display = 'block';
+
+      renderWeakWords();
+
+      const studentId = document.getElementById('studentId').value.trim();
+      const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
+      
+      let taskName = '';
+      if (currentMode === 'teacher') {
+        const select = document.getElementById('taskSelect');
+        taskName = select.options[select.selectedIndex]?.text || '課題未選択';
+      } else {
+        const select = document.getElementById('originalCategorySelect');
+        taskName = select.options[select.selectedIndex]?.value || 'オリジナル英作文';
+      }
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          studentId: studentId,
+          mode: modeName,
+          taskName: taskName,
+          originalText: original,
+          spokenText: spoken,
+          score: score,
+          weakWords: globalWeakWords
+        })
+      });
+    }
+
+    function renderWeakWords() {
+      const weakArea = document.getElementById('weakArea');
+      const container = document.getElementById('weakWordsList');
+      container.innerHTML = '';
+
+      if (globalWeakWords.length === 0) {
+        weakArea.style.display = 'none';
+        return;
+      }
+
+      weakArea.style.display = 'block';
+      globalWeakWords.forEach(word => {
+        const div = document.createElement('div');
+        div.className = 'weak-card';
+        div.innerHTML = `
+          <strong style="font-size: 17px; color: #0f172a;">${word}</strong>
+          <div>
+            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">音声を聞く</button>
+            <button class="btn-primary" onclick="testSingleWord('${word}', this)">発音テスト</button>
+            <span class="test-result" style="margin-left:8px; font-weight:bold;"></span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function testSingleWord(targetWord, btnElement) {
+      stopAudio();
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+
+      const resultSpan = btnElement.nextElementSibling;
+      resultSpan.innerText = '聞き取り中...';
+      resultSpan.style.color = '#64748b';
+
+      recognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.toLowerCase().trim();
+        if (spoken.includes(targetWord.toLowerCase())) {
+          resultSpan.innerText = '正解 (PERFECT)';
+          resultSpan.style.color = '#15803d';
+        } else {
+          resultSpan.innerText = `不一致 (${spoken})`;
+          resultSpan.style.color = '#b91c1c';
+        }
+      };
+
+      recognition.onerror = () => { resultSpan.innerText = 'エラー'; };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
