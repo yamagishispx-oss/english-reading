@@ -25,81 +25,85 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      padding: 24px 16px;
-      max-width: 680px;
+      padding: 20px 16px;
+      max-width: 720px;
       margin: 0 auto;
       color: var(--text-main);
       background: var(--bg-main);
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
-    /* 洗練された洗練されたヘッダーデザイン */
+    /* アプリタイトルヘッダー（説明文削除・洗練デザイン） */
     .header-card {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
       color: #ffffff;
-      padding: 28px 24px;
-      border-radius: 16px;
-      margin-bottom: 24px;
+      padding: 22px 20px;
+      border-radius: 14px;
+      margin-bottom: 18px;
       text-align: center;
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+      box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.2);
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
     .header-card h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 800;
       letter-spacing: 0.03em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
     }
     .header-card .sub-message {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
-      margin-top: 12px;
+      margin-top: 8px;
       color: #38bdf8;
       letter-spacing: 0.02em;
-    }
-    .header-card p {
-      font-size: 0.85rem;
-      margin: 8px 0 0 0;
-      color: #94a3b8;
     }
 
     .card {
       background: var(--surface);
-      padding: 24px;
-      border-radius: 14px;
+      padding: 20px;
+      border-radius: 12px;
       border: 1px solid var(--border-color);
-      box-shadow: 0 4px 12px -2px rgba(0,0,0,0.03);
-      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      margin-bottom: 16px;
     }
 
     h2 {
       margin-top: 0;
       color: var(--text-main);
-      font-size: 1.1rem;
+      font-size: 1.02rem;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
       border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
     }
 
-    /* モダンなセグメントコントロール風タブ */
+    /* 左右2列横並びグリッドレイアウト */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 560px) {
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* タブコントロール */
     .tab-container {
       display: flex;
       background: #e2e8f0;
       padding: 4px;
       border-radius: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .tab-btn {
       flex: 1;
-      padding: 10px;
+      padding: 9px;
       font-size: 14px;
       font-weight: 700;
       border: none;
@@ -113,81 +117,84 @@
     .tab-btn.active {
       background: var(--surface);
       color: var(--primary);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
     }
 
-    label { font-weight: 600; font-size: 14px; color: var(--text-sub); }
+    label { font-weight: 600; font-size: 13.5px; color: var(--text-sub); }
     input[type="text"], textarea, select {
       width: 100%;
-      padding: 12px;
-      font-size: 15px;
+      padding: 10px;
+      font-size: 14.5px;
       box-sizing: border-box;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       margin-top: 6px;
       background: #ffffff;
       color: var(--text-main);
-      transition: border-color 0.2s;
     }
-    input[type="text"]:focus, textarea:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    textarea { height: 100px; font-family: inherit; resize: vertical; }
+    textarea { height: 95px; font-family: inherit; resize: vertical; }
 
     button {
-      padding: 11px 20px;
-      font-size: 14px;
+      padding: 9px 15px;
+      font-size: 13.5px;
       border: none;
-      border-radius: 8px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: 700;
-      margin-right: 8px;
-      margin-top: 8px;
-      transition: all 0.2s ease;
+      margin-right: 6px;
+      margin-top: 6px;
+      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      gap: 4px;
     }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
     .btn-success { background: #16a34a; color: #ffffff; }
     .btn-danger { background: #dc2626; color: #ffffff; }
     .btn-sub { background: #64748b; color: #ffffff; }
+    .btn-auto-chunk {
+      background: #f1f5f9;
+      color: var(--primary-dark);
+      border: 1px solid #cbd5e1;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-auto-chunk:hover { background: #e2e8f0; }
 
-    /* 結果表示ダッシュボード */
+    /* ダッシュボード表示 */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
     .metric-card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      padding: 14px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 8px;
       text-align: center;
     }
-    .metric-label { font-size: 12px; font-weight: 700; color: var(--text-sub); }
-    .metric-value { font-size: 26px; font-weight: 800; color: var(--primary); margin-top: 4px; }
-    .metric-unit { font-size: 13px; font-weight: 600; color: #64748b; }
+    .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
+    .metric-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
+    .metric-unit { font-size: 12px; font-weight: 600; color: #64748b; }
 
-    /* 3段階判定ハイライト */
     .word {
       display: inline-block;
-      padding: 4px 9px;
-      margin: 4px;
-      border-radius: 6px;
-      font-size: 17px;
+      padding: 3px 8px;
+      margin: 3px;
+      border-radius: 5px;
+      font-size: 16.5px;
       font-weight: 700;
-      transition: transform 0.1s;
     }
     .word-perfect { background: var(--bg-perfect); color: var(--color-perfect); border: 1px solid #bbf7d0; }
     .word-near { background: var(--bg-near); color: var(--color-near); border: 1px solid #fde68a; }
     .word-again { background: var(--bg-again); color: var(--color-again); border: 1px solid #fecdd3; }
-    .chunk-divider { color: #94a3b8; font-weight: 300; margin: 0 4px; font-size: 18px; }
+    .chunk-divider { color: #0284c7; font-weight: 800; margin: 0 4px; font-size: 18px; }
 
     .weak-card {
       display: flex;
@@ -195,14 +202,14 @@
       justify-content: space-between;
       background: #fff1f2;
       border: 1px solid #fecdd3;
-      padding: 12px 16px;
+      padding: 10px 14px;
       border-radius: 8px;
       margin-top: 8px;
     }
-    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 8px; font-size: 14px; }
-    .legend { display: flex; gap: 12px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 6px; font-size: 13px; }
+    .legend { display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; margin-bottom: 10px; }
     .legend-item { display: flex; align-items: center; gap: 4px; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
   </style>
 </head>
 <body>
@@ -211,7 +218,6 @@
   <div class="header-card">
     <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」を目指して練習しよう！ 〜</div>
-    <p>お手本を聞いて声に出し、AIチェックで通じる度・リズム・スピードをテストしてみよう。</p>
   </div>
 
   <!-- 生徒情報入力 -->
@@ -228,7 +234,10 @@
 
   <!-- 原稿の用意 -->
   <div class="card">
-    <h2>原稿の準備</h2>
+    <h2>
+      <span>原稿の準備</span>
+      <button class="btn-auto-chunk" onclick="applyAutoChunking()">🪄 自動チャンク区切り</button>
+    </h2>
 
     <div id="modeTeacherArea">
       <label>練習する課題を選択してください:</label>
@@ -238,46 +247,55 @@
     </div>
 
     <div id="modeOriginalArea" style="display:none;">
-      <div style="margin-bottom: 12px;">
+      <div style="margin-bottom: 10px;">
         <label>対象の授業名・単元名を選択してください:</label>
         <select id="originalCategorySelect">
           <option value="">読み込み中...</option>
         </select>
       </div>
 
-      <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+      <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 10px;">
         <label>画像から文字を読み込む（OCR）:</label><br>
-        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:6px;">
+        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px;">
         <div id="ocrStatus"></div>
       </div>
-      <label>英文の確認・編集（/ でチャンク区切り）:</label>
     </div>
 
-    <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
-  </div>
-
-  <!-- お手本を聞いて練習 -->
-  <div class="card">
-    <h2>音声再生（お手本）</h2>
-    <div style="margin-bottom: 12px;">
-      <label>再生速度: </label>
-      <select id="speechRate" style="width: auto; display: inline-block; padding: 6px 12px;" onchange="stopAudio()">
-        <option value="0.7">ゆっくり (0.7x)</option>
-        <option value="0.9" selected>標準 (0.9x)</option>
-        <option value="1.1">速め (1.1x)</option>
-      </select>
+    <div style="margin-top: 10px;">
+      <label>英文の確認・編集（ / で区切り位置を指定可能）:</label>
+      <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
     </div>
-    <button class="btn-primary" id="btnAudioPlay" onclick="playFullAudio()">再生</button>
-    <button class="btn-sub" id="btnAudioPause" onclick="pauseAudio()" disabled>一時停止</button>
-    <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>最初から</button>
   </div>
 
-  <!-- 音読を録音する -->
-  <div class="card">
-    <h2>音読録音</h2>
-    <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
-    <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
-    <p id="recStatus" style="color: var(--text-sub); font-size: 14px; margin-top: 12px; min-height: 20px;"></p>
+  <!-- お手本再生と録音の横並び（2カラム）エリア -->
+  <div class="action-grid">
+    <!-- 音声再生（お手本） -->
+    <div class="card" style="margin-bottom: 0;">
+      <h2>音声再生（お手本）</h2>
+      <div style="margin-bottom: 8px;">
+        <label>速度: </label>
+        <select id="speechRate" style="width: auto; display: inline-block; padding: 4px 8px;" onchange="stopAudio()">
+          <option value="0.7">ゆっくり (0.7x)</option>
+          <option value="0.9" selected>標準 (0.9x)</option>
+          <option value="1.1">速め (1.1x)</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn-primary" id="btnAudioPlay" onclick="playFullAudio()">再生</button>
+        <button class="btn-sub" id="btnAudioPause" onclick="pauseAudio()" disabled>一時停止</button>
+        <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>最初から</button>
+      </div>
+    </div>
+
+    <!-- 音読録音 -->
+    <div class="card" style="margin-bottom: 0;">
+      <h2>音読録音</h2>
+      <div>
+        <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
+        <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
+      </div>
+      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px; min-height: 18px; line-height: 1.3;"></p>
+    </div>
   </div>
 
   <!-- 評価結果ダッシュボード -->
@@ -300,18 +318,18 @@
     </div>
 
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:var(--color-perfect)"></div> PERFECT（通じた）</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--color-near)"></div> NEAR（惜しい！）</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--color-again)"></div> TRY AGAIN（要練習）</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-perfect)"></div> PERFECT</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-near)"></div> NEAR</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-again)"></div> TRY AGAIN</div>
     </div>
 
-    <div id="wordDisplay" style="line-height: 2.2;"></div>
+    <div id="wordDisplay" style="line-height: 2.1;"></div>
   </div>
 
   <!-- 苦手単語トレーニング -->
   <div class="card" id="weakArea" style="display:none;">
     <h2>苦手単語トレーニング</h2>
-    <p style="font-size: 13px; color: var(--text-sub);">AIに通じなかった単語の個別発音チェックです。</p>
+    <p style="font-size: 12.5px; color: var(--text-sub);">通じなかった単語の個別発音チェックです。</p>
     <div id="weakWordsList"></div>
   </div>
 
@@ -323,10 +341,11 @@
     let originalCategoryList = [];
     let globalWeakWords = [];
     let activeRecognition = null;
-    let currentUtterance = null;
 
-    let recStartTime = 0;
-    let speechTimestamps = [];
+    /* 音声再生状態管理（一時停止・再開バグ対策） */
+    let currentSpeechText = '';
+    let speechCharIndex = 0;
+    let isSpeechPaused = false;
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
@@ -356,7 +375,7 @@
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
           if (originalCategoryList.length === 0) {
-            origSelect.innerHTML = '<option value="">登録された単元がありません</option>';
+            origSelect.innerHTML = '<option value="通常授業">通常授業</option>';
           } else {
             originalCategoryList.forEach(cat => {
               const opt = document.createElement('option');
@@ -401,12 +420,36 @@
       }
     }
 
+    /* 自動チャンク（/）挿入ロジック */
+    function autoChunkText(text) {
+      if (!text) return '';
+      let clean = text.replace(/\s*\/\s*/g, ' ');
+
+      // 1. 記号（ピリオド・カンマ等）の後にチャンク
+      clean = clean.replace(/([.,?!;:])/g, '$1 /');
+
+      // 2. 接続詞の前にチャンク
+      clean = clean.replace(/\b(because|when|if|that|which|who|where|while|although|because|so|but|and)\b/gi, '/ $1');
+
+      // 3. 長めの前置詞句の前にチャンク
+      clean = clean.replace(/\b(in|on|at|to|for|with|from|by|about|into|through)\b/gi, '/ $1');
+
+      // 余分なスラッシュの整理
+      return clean.replace(/\/\s*\//g, '/').replace(/^\s*\/\s*/, '').replace(/\/\s*$/, '').trim();
+    }
+
+    function applyAutoChunking() {
+      const input = document.getElementById('sentence').value;
+      if (!input.trim()) return alert('英文を入力または選択してください');
+      document.getElementById('sentence').value = autoChunkText(input);
+    }
+
     function processImage(input) {
       if (!input.files || !input.files[0]) return;
       const file = input.files[0];
       const status = document.getElementById('ocrStatus');
       
-      status.innerText = '画像から文字を読み取っています...（数秒かかります）';
+      status.innerText = '画像から文字を読み取っています...';
 
       Tesseract.recognize(file, 'eng', {
         logger: m => {
@@ -415,11 +458,11 @@
           }
         }
       }).then(({ data: { text } }) => {
-        status.innerText = '読み取りが完了しました。必要に応じて文字を修正してください。';
+        status.innerText = '読み取り完了。';
         const cleanText = text.replace(/\n+/g, ' ').trim();
-        document.getElementById('sentence').value = cleanText;
+        document.getElementById('sentence').value = autoChunkText(cleanText);
       }).catch(err => {
-        status.innerText = '画像の読み取りに失敗しました。別の画像でお試しください。';
+        status.innerText = '読み取り失敗。';
       });
     }
 
@@ -433,39 +476,72 @@
       speechSynthesis.speak(uttr);
     }
 
+    /* 音声再生（一時停止・再開の完全修正） */
     function playFullAudio() {
-      const text = document.getElementById('sentence').value.trim();
+      const fullText = document.getElementById('sentence').value.trim();
       const rate = document.getElementById('speechRate').value;
-      if (!text) return alert('英文を入力してください');
+      if (!fullText) return alert('英文を入力してください');
 
-      if (speechSynthesis.paused && speechSynthesis.speaking) {
-        speechSynthesis.resume();
+      // 一時停止状態からの再開処理
+      if (isSpeechPaused && currentSpeechText) {
+        const remainingText = currentSpeechText.substring(speechCharIndex);
+        speechSynthesis.cancel();
+        
+        const uttr = new SpeechSynthesisUtterance(remainingText);
+        uttr.lang = 'en-US';
+        uttr.rate = parseFloat(rate);
+
+        uttr.onboundary = (event) => {
+          if (event.name === 'word') {
+            speechCharIndex += event.charIndex;
+          }
+        };
+
+        uttr.onend = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
+        uttr.onerror = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
+
+        speechSynthesis.speak(uttr);
+        isSpeechPaused = false;
         updateAudioButtons('playing');
         return;
       }
 
+      // 新規再生処理
       speechSynthesis.cancel();
-      const cleanText = text.replace(/\//g, ' ');
-      currentUtterance = new SpeechSynthesisUtterance(cleanText);
-      currentUtterance.lang = 'en-US';
-      currentUtterance.rate = parseFloat(rate);
+      currentSpeechText = fullText.replace(/\//g, ' ');
+      speechCharIndex = 0;
+      isSpeechPaused = false;
 
-      currentUtterance.onend = () => { updateAudioButtons('stopped'); };
-      currentUtterance.onerror = () => { updateAudioButtons('stopped'); };
+      const uttr = new SpeechSynthesisUtterance(currentSpeechText);
+      uttr.lang = 'en-US';
+      uttr.rate = parseFloat(rate);
 
-      speechSynthesis.speak(currentUtterance);
+      uttr.onboundary = (event) => {
+        if (event.name === 'word') {
+          speechCharIndex = event.charIndex;
+        }
+      };
+
+      uttr.onend = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
+      uttr.onerror = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
+
+      speechSynthesis.speak(uttr);
       updateAudioButtons('playing');
     }
 
     function pauseAudio() {
-      if (speechSynthesis.speaking && !speechSynthesis.paused) {
-        speechSynthesis.pause();
+      if (speechSynthesis.speaking && !isSpeechPaused) {
+        speechSynthesis.cancel();
+        isSpeechPaused = true;
         updateAudioButtons('paused');
       }
     }
 
     function stopAudio() {
       speechSynthesis.cancel();
+      isSpeechPaused = false;
+      speechCharIndex = 0;
+      currentSpeechText = '';
       updateAudioButtons('stopped');
     }
 
@@ -495,7 +571,6 @@
       }
     }
 
-    /* アルゴリズム：レベンシュタイン距離（文字列類似度計算） */
     function getLevenshteinDistance(a, b) {
       const matrix = [];
       for (let i = 0; i <= b.length; i++) matrix[i] = [i];
@@ -534,30 +609,25 @@
       activeRecognition.lang = 'en-US';
       activeRecognition.interimResults = true;
       
-      speechTimestamps = [];
       recStartTime = Date.now();
 
-      document.getElementById('recStatus').innerText = '録音中... 声を出して音読してください。（終了時は「録音終了」を押します）';
+      document.getElementById('recStatus').innerText = '録音中... 音読してください。（終了時は「録音終了」を押します）';
       document.getElementById('btnRecStart').disabled = true;
       document.getElementById('btnRecStop').disabled = false;
 
       let finalTranscript = '';
 
       activeRecognition.onresult = (event) => {
-        let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript + ' ';
-            speechTimestamps.push(Date.now());
-          } else {
-            interim += event.results[i][0].transcript;
           }
         }
       };
 
       activeRecognition.onerror = (event) => {
         resetRecUi();
-        document.getElementById('recStatus').innerText = 'エラーが発生しました: ' + event.error;
+        document.getElementById('recStatus').innerText = 'エラー: ' + event.error;
       };
 
       activeRecognition.onend = () => {
@@ -582,14 +652,12 @@
     }
 
     function analyzeSpeech(original, spoken, durationSec) {
-      document.getElementById('recStatus').innerText = '判定が完了しました。下の分析結果を確認してください。';
+      document.getElementById('recStatus').innerText = '判定完了。結果を確認してください。';
 
-      // 1. WPM（発音スピード）の計算
       const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
       const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
       document.getElementById('wpmVal').innerText = wpm;
 
-      // チャンク構造と単語の抽出
       const rawTokens = original.split(/(\s+|\/)/);
       const spokenWords = spokenWordsAll.map(w => w.toLowerCase());
 
@@ -601,7 +669,6 @@
       let totalWords = 0;
       let spokenIndex = 0;
 
-      let chunkCount = 0;
       let chunkCorrectCount = 0;
       let hasChunks = original.includes('/');
 
@@ -609,7 +676,6 @@
         if (!token.trim()) return;
 
         if (token === '/') {
-          chunkCount++;
           const slashSpan = document.createElement('span');
           slashSpan.className = 'chunk-divider';
           slashSpan.innerText = '/';
@@ -621,11 +687,9 @@
         if (!cleanWord) return;
 
         totalWords++;
-        
-        let matchQuality = 'again'; // 'perfect', 'near', 'again'
+        let matchQuality = 'again';
         let foundPos = -1;
 
-        // 音声認識単語とのマッチング・3段階評価判定
         for (let i = spokenIndex; i < Math.min(spokenIndex + 5, spokenWords.length); i++) {
           const sWord = spokenWords[i];
           if (sWord === cleanWord) {
@@ -667,11 +731,9 @@
         wordDisplay.appendChild(span);
       });
 
-      // 総合伝わる度スコア (%)
       const finalScore = totalWords > 0 ? Math.round((totalPoints / totalWords) * 100) : 0;
       document.getElementById('scoreVal').innerText = finalScore;
 
-      // チャンク精度 (%)
       const chunkMetricCard = document.getElementById('chunkMetricCard');
       if (hasChunks) {
         const chunkScore = totalWords > 0 ? Math.round((chunkCorrectCount / totalWords) * 100) : 0;
@@ -682,10 +744,9 @@
       }
 
       document.getElementById('resultArea').style.display = 'block';
-
       renderWeakWords();
 
-      // GASへの結果自動送信
+      /* GAS送信データの確定（スプレッドシートの形式と完全一致） */
       const studentId = document.getElementById('studentId').value.trim();
       const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
       
@@ -695,9 +756,10 @@
         taskName = select.options[select.selectedIndex]?.text || '課題未選択';
       } else {
         const select = document.getElementById('originalCategorySelect');
-        taskName = select.options[select.selectedIndex]?.value || 'オリジナル英作文';
+        taskName = select.value || select.options[select.selectedIndex]?.text || 'オリジナル英作文';
       }
 
+      // スプレッドシートへ送信
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
@@ -708,7 +770,6 @@
           originalText: original,
           spokenText: spoken,
           score: finalScore,
-          wpm: wpm,
           weakWords: globalWeakWords
         })
       });
@@ -729,11 +790,11 @@
         const div = document.createElement('div');
         div.className = 'weak-card';
         div.innerHTML = `
-          <strong style="font-size: 17px; color: var(--text-main);">${word}</strong>
+          <strong style="font-size: 16px; color: var(--text-main);">${word}</strong>
           <div>
             <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">音声を聞く</button>
             <button class="btn-primary" onclick="testSingleWord('${word}', this)">発音テスト</button>
-            <span class="test-result" style="margin-left:8px; font-weight:bold;"></span>
+            <span class="test-result" style="margin-left:6px; font-weight:bold;"></span>
           </div>
         `;
         container.appendChild(div);
