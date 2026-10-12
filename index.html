@@ -33,7 +33,6 @@
       line-height: 1.5;
     }
 
-    /* アプリタイトルヘッダー */
     .header-card {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
       color: #ffffff;
@@ -80,7 +79,6 @@
       margin-bottom: 14px;
     }
 
-    /* 左右2列横並びグリッドレイアウト */
     .action-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -93,7 +91,6 @@
       }
     }
 
-    /* タブコントロール */
     .tab-container {
       display: flex;
       background: #e2e8f0;
@@ -165,7 +162,6 @@
     }
     .btn-auto-chunk:hover { background: #e2e8f0; }
 
-    /* ダッシュボード表示 */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -268,9 +264,9 @@
     </div>
   </div>
 
-  <!-- お手本再生と録音の横並び（2カラム）エリア -->
+  <!-- お手本再生と録音の横並びエリア -->
   <div class="action-grid">
-    <!-- 音声再生（お手本） -->
+    <!-- 音声再生（再生・停止の2ボタン化） -->
     <div class="card" style="margin-bottom: 0;">
       <h2>音声再生（お手本）</h2>
       <div style="margin-bottom: 8px;">
@@ -283,8 +279,7 @@
       </div>
       <div>
         <button class="btn-primary" id="btnAudioPlay" onclick="playFullAudio()">再生</button>
-        <button class="btn-sub" id="btnAudioPause" onclick="pauseAudio()" disabled>一時停止</button>
-        <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>最初から</button>
+        <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>停止</button>
       </div>
     </div>
 
@@ -343,8 +338,7 @@
     let originalCategoryList = [];
     let globalWeakWords = [];
     let activeRecognition = null;
-
-    let currentUtterance = null;
+    let recStartTime = 0;
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
@@ -370,8 +364,8 @@
             onTaskChange();
           }
 
-          /* スプレッドシートのオリジナル単元（originalCategories）の参照設定 */
-          originalCategoryList = data.originalCategories || data.categories || [];
+          /* オリジナル原稿シートのA列を参照した選択肢の反映 */
+          originalCategoryList = data.originalCategories || [];
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
           if (originalCategoryList.length === 0) {
@@ -467,42 +461,22 @@
       speechSynthesis.speak(uttr);
     }
 
-    /* お手本再生・一時停止・再開制御の確実な修正 */
+    /* 再生・停止のシンプル2ボタン制御 */
     function playFullAudio() {
       const text = document.getElementById('sentence').value.replace(/\//g, ' ').trim();
       if (!text) return alert('英文を入力してください');
 
-      // 一時停止からの再開
-      if (speechSynthesis.paused && speechSynthesis.speaking) {
-        speechSynthesis.resume();
-        updateAudioButtons('playing');
-        return;
-      }
-
-      // 新規再生
       speechSynthesis.cancel();
       const rate = document.getElementById('speechRate').value;
-      currentUtterance = new SpeechSynthesisUtterance(text);
-      currentUtterance.lang = 'en-US';
-      currentUtterance.rate = parseFloat(rate);
+      const uttr = new SpeechSynthesisUtterance(text);
+      uttr.lang = 'en-US';
+      uttr.rate = parseFloat(rate);
 
-      currentUtterance.onend = () => { updateAudioButtons('stopped'); };
-      currentUtterance.onerror = () => { updateAudioButtons('stopped'); };
+      uttr.onend = () => { updateAudioButtons('stopped'); };
+      uttr.onerror = () => { updateAudioButtons('stopped'); };
 
-      speechSynthesis.speak(currentUtterance);
+      speechSynthesis.speak(uttr);
       updateAudioButtons('playing');
-    }
-
-    function pauseAudio() {
-      if (speechSynthesis.speaking) {
-        if (speechSynthesis.paused) {
-          speechSynthesis.resume();
-          updateAudioButtons('playing');
-        } else {
-          speechSynthesis.pause();
-          updateAudioButtons('paused');
-        }
-      }
     }
 
     function stopAudio() {
@@ -512,26 +486,15 @@
 
     function updateAudioButtons(state) {
       const btnPlay = document.getElementById('btnAudioPlay');
-      const btnPause = document.getElementById('btnAudioPause');
       const btnStop = document.getElementById('btnAudioStop');
 
       if (state === 'playing') {
-        btnPlay.innerText = '再生中';
+        btnPlay.innerText = '再生中...';
         btnPlay.disabled = true;
-        btnPause.innerText = '一時停止';
-        btnPause.disabled = false;
-        btnStop.disabled = false;
-      } else if (state === 'paused') {
-        btnPlay.innerText = '再開';
-        btnPlay.disabled = false;
-        btnPause.innerText = '一時停止中';
-        btnPause.disabled = true;
         btnStop.disabled = false;
       } else {
         btnPlay.innerText = '再生';
         btnPlay.disabled = false;
-        btnPause.innerText = '一時停止';
-        btnPause.disabled = true;
         btnStop.disabled = true;
       }
     }
@@ -622,7 +585,6 @@
       const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
       const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
       
-      // 発話スピードのわかりやすい判定表示
       document.getElementById('wpmVal').innerText = wpm;
       const wpmDesc = document.getElementById('wpmDesc');
       if (wpm < 80) {
