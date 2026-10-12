@@ -33,7 +33,7 @@
       line-height: 1.5;
     }
 
-    /* アプリタイトルヘッダー（説明文削除・洗練デザイン） */
+    /* アプリタイトルヘッダー */
     .header-card {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
       color: #ffffff;
@@ -168,7 +168,7 @@
     /* ダッシュボード表示 */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
       margin-bottom: 16px;
     }
@@ -182,6 +182,7 @@
     .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
     .metric-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
     .metric-unit { font-size: 12px; font-weight: 600; color: #64748b; }
+    .metric-desc { font-size: 11px; font-weight: 600; color: #0284c7; margin-top: 2px; }
 
     .word {
       display: inline-block;
@@ -305,15 +306,16 @@
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">伝わる度（総合）</div>
-        <div class="metric-value" id="scoreVal">0<span class="metric-unit">%</span></div>
+        <div class="metric-value" id="scoreVal">0<span class="metric-unit"> / 100</span></div>
+      </div>
+      <div class="metric-card" id="chunkMetricCard" style="display:none;">
+        <div class="metric-label">チャンク精度</div>
+        <div class="metric-value" id="chunkVal">0<span class="metric-unit"> / 100</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">発話スピード</div>
         <div class="metric-value" id="wpmVal">0<span class="metric-unit"> WPM</span></div>
-      </div>
-      <div class="metric-card" id="chunkMetricCard" style="display:none;">
-        <div class="metric-label">チャンク精度</div>
-        <div class="metric-value" id="chunkVal">0<span class="metric-unit">%</span></div>
+        <div class="metric-desc" id="wpmDesc">目安: 100〜130 WPM</div>
       </div>
     </div>
 
@@ -342,10 +344,7 @@
     let globalWeakWords = [];
     let activeRecognition = null;
 
-    /* 音声再生状態管理（一時停止・再開バグ対策） */
-    let currentSpeechText = '';
-    let speechCharIndex = 0;
-    let isSpeechPaused = false;
+    let currentUtterance = null;
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
@@ -371,7 +370,8 @@
             onTaskChange();
           }
 
-          originalCategoryList = data.originalCategories || [];
+          /* スプレッドシートのオリジナル単元（originalCategories）の参照設定 */
+          originalCategoryList = data.originalCategories || data.categories || [];
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
           if (originalCategoryList.length === 0) {
@@ -420,21 +420,12 @@
       }
     }
 
-    /* 自動チャンク（/）挿入ロジック */
     function autoChunkText(text) {
       if (!text) return '';
       let clean = text.replace(/\s*\/\s*/g, ' ');
-
-      // 1. 記号（ピリオド・カンマ等）の後にチャンク
       clean = clean.replace(/([.,?!;:])/g, '$1 /');
-
-      // 2. 接続詞の前にチャンク
-      clean = clean.replace(/\b(because|when|if|that|which|who|where|while|although|because|so|but|and)\b/gi, '/ $1');
-
-      // 3. 長めの前置詞句の前にチャンク
+      clean = clean.replace(/\b(because|when|if|that|which|who|where|while|although|so|but|and)\b/gi, '/ $1');
       clean = clean.replace(/\b(in|on|at|to|for|with|from|by|about|into|through)\b/gi, '/ $1');
-
-      // 余分なスラッシュの整理
       return clean.replace(/\/\s*\//g, '/').replace(/^\s*\/\s*/, '').replace(/\/\s*$/, '').trim();
     }
 
@@ -476,72 +467,46 @@
       speechSynthesis.speak(uttr);
     }
 
-    /* 音声再生（一時停止・再開の完全修正） */
+    /* お手本再生・一時停止・再開制御の確実な修正 */
     function playFullAudio() {
-      const fullText = document.getElementById('sentence').value.trim();
-      const rate = document.getElementById('speechRate').value;
-      if (!fullText) return alert('英文を入力してください');
+      const text = document.getElementById('sentence').value.replace(/\//g, ' ').trim();
+      if (!text) return alert('英文を入力してください');
 
-      // 一時停止状態からの再開処理
-      if (isSpeechPaused && currentSpeechText) {
-        const remainingText = currentSpeechText.substring(speechCharIndex);
-        speechSynthesis.cancel();
-        
-        const uttr = new SpeechSynthesisUtterance(remainingText);
-        uttr.lang = 'en-US';
-        uttr.rate = parseFloat(rate);
-
-        uttr.onboundary = (event) => {
-          if (event.name === 'word') {
-            speechCharIndex += event.charIndex;
-          }
-        };
-
-        uttr.onend = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
-        uttr.onerror = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
-
-        speechSynthesis.speak(uttr);
-        isSpeechPaused = false;
+      // 一時停止からの再開
+      if (speechSynthesis.paused && speechSynthesis.speaking) {
+        speechSynthesis.resume();
         updateAudioButtons('playing');
         return;
       }
 
-      // 新規再生処理
+      // 新規再生
       speechSynthesis.cancel();
-      currentSpeechText = fullText.replace(/\//g, ' ');
-      speechCharIndex = 0;
-      isSpeechPaused = false;
+      const rate = document.getElementById('speechRate').value;
+      currentUtterance = new SpeechSynthesisUtterance(text);
+      currentUtterance.lang = 'en-US';
+      currentUtterance.rate = parseFloat(rate);
 
-      const uttr = new SpeechSynthesisUtterance(currentSpeechText);
-      uttr.lang = 'en-US';
-      uttr.rate = parseFloat(rate);
+      currentUtterance.onend = () => { updateAudioButtons('stopped'); };
+      currentUtterance.onerror = () => { updateAudioButtons('stopped'); };
 
-      uttr.onboundary = (event) => {
-        if (event.name === 'word') {
-          speechCharIndex = event.charIndex;
-        }
-      };
-
-      uttr.onend = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
-      uttr.onerror = () => { updateAudioButtons('stopped'); isSpeechPaused = false; };
-
-      speechSynthesis.speak(uttr);
+      speechSynthesis.speak(currentUtterance);
       updateAudioButtons('playing');
     }
 
     function pauseAudio() {
-      if (speechSynthesis.speaking && !isSpeechPaused) {
-        speechSynthesis.cancel();
-        isSpeechPaused = true;
-        updateAudioButtons('paused');
+      if (speechSynthesis.speaking) {
+        if (speechSynthesis.paused) {
+          speechSynthesis.resume();
+          updateAudioButtons('playing');
+        } else {
+          speechSynthesis.pause();
+          updateAudioButtons('paused');
+        }
       }
     }
 
     function stopAudio() {
       speechSynthesis.cancel();
-      isSpeechPaused = false;
-      speechCharIndex = 0;
-      currentSpeechText = '';
       updateAudioButtons('stopped');
     }
 
@@ -656,7 +621,17 @@
 
       const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
       const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
+      
+      // 発話スピードのわかりやすい判定表示
       document.getElementById('wpmVal').innerText = wpm;
+      const wpmDesc = document.getElementById('wpmDesc');
+      if (wpm < 80) {
+        wpmDesc.innerText = 'ゆっくり（目標: 100〜130）';
+      } else if (wpm <= 140) {
+        wpmDesc.innerText = '標準・適正スピード';
+      } else {
+        wpmDesc.innerText = '速め（目標: 100〜130）';
+      }
 
       const rawTokens = original.split(/(\s+|\/)/);
       const spokenWords = spokenWordsAll.map(w => w.toLowerCase());
@@ -732,12 +707,12 @@
       });
 
       const finalScore = totalWords > 0 ? Math.round((totalPoints / totalWords) * 100) : 0;
-      document.getElementById('scoreVal').innerText = finalScore;
+      document.getElementById('scoreVal').innerHTML = `${finalScore}<span class="metric-unit"> / 100</span>`;
 
       const chunkMetricCard = document.getElementById('chunkMetricCard');
       if (hasChunks) {
         const chunkScore = totalWords > 0 ? Math.round((chunkCorrectCount / totalWords) * 100) : 0;
-        document.getElementById('chunkVal').innerText = chunkScore;
+        document.getElementById('chunkVal').innerHTML = `${chunkScore}<span class="metric-unit"> / 100</span>`;
         chunkMetricCard.style.display = 'block';
       } else {
         chunkMetricCard.style.display = 'none';
@@ -746,7 +721,6 @@
       document.getElementById('resultArea').style.display = 'block';
       renderWeakWords();
 
-      /* GAS送信データの確定（スプレッドシートの形式と完全一致） */
       const studentId = document.getElementById('studentId').value.trim();
       const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
       
@@ -759,7 +733,6 @@
         taskName = select.value || select.options[select.selectedIndex]?.text || 'オリジナル英作文';
       }
 
-      // スプレッドシートへ送信
       fetch(GAS_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
