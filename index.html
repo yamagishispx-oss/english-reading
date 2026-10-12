@@ -3,64 +3,227 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英語音読トレーナー</title>
+  <title>英語音読トレーニング - 伝わる英語を目指そう</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; padding: 20px 15px; max-width: 650px; margin: 0 auto; color: #1e293b; background: #f8fafc; line-height: 1.5; }
-    .card { background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    
-    /* アプリタイトルヘッダー */
-    .header-card { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #ffffff; padding: 22px 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    .header-card h1 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .header-card .sub-message { font-size: 0.95rem; font-weight: 600; margin-top: 8px; color: #e0f2fe; background: rgba(255, 255, 255, 0.15); display: inline-block; padding: 4px 12px; border-radius: 20px; }
-    .header-card p { font-size: 0.85rem; margin: 10px 0 0 0; color: #bae6fd; opacity: 0.95; }
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --bg-main: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      --border-color: #e2e8f0;
+      
+      --color-perfect: #16a34a;
+      --bg-perfect: #dcfce7;
+      --color-near: #d97706;
+      --bg-near: #fef3c7;
+      --color-again: #dc2626;
+      --bg-again: #fee2e2;
+    }
 
-    h2 { margin-top: 0; color: #0f172a; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; font-size: 1.05rem; font-weight: 700; }
-    
-    .tab-container { display: flex; gap: 10px; margin-bottom: 15px; }
-    .tab-btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; border-radius: 6px; cursor: pointer; text-align: center; transition: all 0.2s; }
-    .tab-btn.active { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 24px 16px;
+      max-width: 680px;
+      margin: 0 auto;
+      color: var(--text-main);
+      background: var(--bg-main);
+      line-height: 1.6;
+    }
 
-    label { font-weight: 600; font-size: 14px; color: #334155; }
-    input[type="text"] { width: 100%; padding: 10px; font-size: 15px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 6px; }
-    textarea { width: 100%; height: 90px; font-size: 15px; padding: 10px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 8px; font-family: inherit; }
-    select { width: 100%; padding: 10px; font-size: 15px; border-radius: 6px; border: 1px solid #cbd5e1; margin-top: 6px; background-color: #ffffff; }
-    
-    button { padding: 10px 18px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 8px; margin-top: 6px; transition: opacity 0.2s; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: #2563eb; color: #ffffff; }
-    .btn-success { background: #059669; color: #ffffff; }
+    /* 洗練された洗練されたヘッダーデザイン */
+    .header-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
+      color: #ffffff;
+      padding: 28px 24px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .header-card h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .header-card .sub-message {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-top: 12px;
+      color: #38bdf8;
+      letter-spacing: 0.02em;
+    }
+    .header-card p {
+      font-size: 0.85rem;
+      margin: 8px 0 0 0;
+      color: #94a3b8;
+    }
+
+    .card {
+      background: var(--surface);
+      padding: 24px;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px -2px rgba(0,0,0,0.03);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    /* モダンなセグメントコントロール風タブ */
+    .tab-container {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    label { font-weight: 600; font-size: 14px; color: var(--text-sub); }
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 15px;
+      box-sizing: border-box;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-top: 6px;
+      background: #ffffff;
+      color: var(--text-main);
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    textarea { height: 100px; font-family: inherit; resize: vertical; }
+
+    button {
+      padding: 11px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      margin-right: 8px;
+      margin-top: 8px;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #ffffff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-success { background: #16a34a; color: #ffffff; }
     .btn-danger { background: #dc2626; color: #ffffff; }
-    .btn-sub { background: #475569; color: #ffffff; }
-    
-    .word { display: inline-block; padding: 3px 8px; margin: 3px; border-radius: 4px; font-size: 17px; font-weight: 600; }
-    .word-correct { background: #dcfce7; color: #15803d; }
-    .word-incorrect { background: #fee2e2; color: #b91c1c; }
-    
-    .weak-card { display: flex; align-items: center; justify-content: space-between; background: #fff1f2; border: 1px solid #fecdd3; padding: 10px 14px; border-radius: 6px; margin-top: 8px; }
-    .score-badge { font-size: 28px; font-weight: bold; color: #2563eb; }
-    #ocrStatus { font-weight: 600; color: #2563eb; margin-top: 8px; font-size: 14px; }
+    .btn-sub { background: #64748b; color: #ffffff; }
+
+    /* 結果表示ダッシュボード */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 14px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .metric-label { font-size: 12px; font-weight: 700; color: var(--text-sub); }
+    .metric-value { font-size: 26px; font-weight: 800; color: var(--primary); margin-top: 4px; }
+    .metric-unit { font-size: 13px; font-weight: 600; color: #64748b; }
+
+    /* 3段階判定ハイライト */
+    .word {
+      display: inline-block;
+      padding: 4px 9px;
+      margin: 4px;
+      border-radius: 6px;
+      font-size: 17px;
+      font-weight: 700;
+      transition: transform 0.1s;
+    }
+    .word-perfect { background: var(--bg-perfect); color: var(--color-perfect); border: 1px solid #bbf7d0; }
+    .word-near { background: var(--bg-near); color: var(--color-near); border: 1px solid #fde68a; }
+    .word-again { background: var(--bg-again); color: var(--color-again); border: 1px solid #fecdd3; }
+    .chunk-divider { color: #94a3b8; font-weight: 300; margin: 0 4px; font-size: 18px; }
+
+    .weak-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 8px; font-size: 14px; }
+    .legend { display: flex; gap: 12px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
   </style>
 </head>
 <body>
 
   <!-- アプリタイトルヘッダー -->
   <div class="header-card">
-    <h1>🎤 英語音読トレーナー</h1>
+    <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」を目指して練習しよう！ 〜</div>
-    <p>お手本を聞いて声に出し、AIチェックで通じる度をテストしてみよう。</p>
+    <p>お手本を聞いて声に出し、AIチェックで通じる度・リズム・スピードをテストしてみよう。</p>
   </div>
 
   <!-- 生徒情報入力 -->
-  <div class="card" style="background: #f0f9ff; border: 1px solid #bae6fd;">
+  <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
     <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
 
   <!-- モード選択 -->
   <div class="tab-container">
-    <div id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</div>
-    <div id="tabOriginal" class="tab-btn" onclick="switchMode('original')">オリジナル原稿</div>
+    <button id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</button>
+    <button id="tabOriginal" class="tab-btn" onclick="switchMode('original')">オリジナル原稿</button>
   </div>
 
   <!-- 原稿の用意 -->
@@ -82,12 +245,12 @@
         </select>
       </div>
 
-      <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
+      <div style="background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
         <label>画像から文字を読み込む（OCR）:</label><br>
         <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:6px;">
         <div id="ocrStatus"></div>
       </div>
-      <label>英文の確認・編集:</label>
+      <label>英文の確認・編集（/ でチャンク区切り）:</label>
     </div>
 
     <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
@@ -96,9 +259,9 @@
   <!-- お手本を聞いて練習 -->
   <div class="card">
     <h2>音声再生（お手本）</h2>
-    <div style="margin-bottom: 10px;">
+    <div style="margin-bottom: 12px;">
       <label>再生速度: </label>
-      <select id="speechRate" style="width: auto; display: inline-block;" onchange="stopAudio()">
+      <select id="speechRate" style="width: auto; display: inline-block; padding: 6px 12px;" onchange="stopAudio()">
         <option value="0.7">ゆっくり (0.7x)</option>
         <option value="0.9" selected>標準 (0.9x)</option>
         <option value="1.1">速め (1.1x)</option>
@@ -114,21 +277,41 @@
     <h2>音読録音</h2>
     <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
     <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
-    <p id="recStatus" style="color: #64748b; font-size: 14px; margin-top: 10px; min-height: 20px;"></p>
+    <p id="recStatus" style="color: var(--text-sub); font-size: 14px; margin-top: 12px; min-height: 20px;"></p>
   </div>
 
-  <!-- 正確さを確認する -->
+  <!-- 評価結果ダッシュボード -->
   <div class="card" id="resultArea" style="display:none;">
-    <h2>評価結果</h2>
-    <p><strong>全体の一致率: <span id="scoreVal" class="score-badge">0</span>%</strong></p>
-    <p style="margin-bottom: 5px;"><strong>単語判定結果:</strong> （緑：一致 / 赤：不一致・未判定）</p>
-    <div id="wordDisplay" style="line-height: 2.0;"></div>
+    <h2>評価結果分析</h2>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">伝わる度（総合）</div>
+        <div class="metric-value" id="scoreVal">0<span class="metric-unit">%</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">発話スピード</div>
+        <div class="metric-value" id="wpmVal">0<span class="metric-unit"> WPM</span></div>
+      </div>
+      <div class="metric-card" id="chunkMetricCard" style="display:none;">
+        <div class="metric-label">チャンク精度</div>
+        <div class="metric-value" id="chunkVal">0<span class="metric-unit">%</span></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-perfect)"></div> PERFECT（通じた）</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-near)"></div> NEAR（惜しい！）</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--color-again)"></div> TRY AGAIN（要練習）</div>
+    </div>
+
+    <div id="wordDisplay" style="line-height: 2.2;"></div>
   </div>
 
   <!-- 苦手単語トレーニング -->
   <div class="card" id="weakArea" style="display:none;">
     <h2>苦手単語トレーニング</h2>
-    <p style="font-size: 13px; color: #64748b;">認識されなかった単語の個別トレーニングです。</p>
+    <p style="font-size: 13px; color: var(--text-sub);">AIに通じなかった単語の個別発音チェックです。</p>
     <div id="weakWordsList"></div>
   </div>
 
@@ -141,6 +324,9 @@
     let globalWeakWords = [];
     let activeRecognition = null;
     let currentUtterance = null;
+
+    let recStartTime = 0;
+    let speechTimestamps = [];
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
@@ -240,7 +426,8 @@
     function playAudioText(text, rate = 0.9) {
       if (!text) return;
       speechSynthesis.cancel();
-      const uttr = new SpeechSynthesisUtterance(text);
+      const cleanText = text.replace(/\//g, ' ');
+      const uttr = new SpeechSynthesisUtterance(cleanText);
       uttr.lang = 'en-US';
       uttr.rate = parseFloat(rate);
       speechSynthesis.speak(uttr);
@@ -258,7 +445,8 @@
       }
 
       speechSynthesis.cancel();
-      currentUtterance = new SpeechSynthesisUtterance(text);
+      const cleanText = text.replace(/\//g, ' ');
+      currentUtterance = new SpeechSynthesisUtterance(cleanText);
       currentUtterance.lang = 'en-US';
       currentUtterance.rate = parseFloat(rate);
 
@@ -307,6 +495,27 @@
       }
     }
 
+    /* アルゴリズム：レベンシュタイン距離（文字列類似度計算） */
+    function getLevenshteinDistance(a, b) {
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
     function startFullRecognition() {
       stopAudio();
       const studentId = document.getElementById('studentId').value.trim();
@@ -323,15 +532,27 @@
 
       activeRecognition = new SpeechRecognition();
       activeRecognition.lang = 'en-US';
+      activeRecognition.interimResults = true;
       
+      speechTimestamps = [];
+      recStartTime = Date.now();
+
       document.getElementById('recStatus').innerText = '録音中... 声を出して音読してください。（終了時は「録音終了」を押します）';
       document.getElementById('btnRecStart').disabled = true;
       document.getElementById('btnRecStop').disabled = false;
 
+      let finalTranscript = '';
+
       activeRecognition.onresult = (event) => {
-        resetRecUi();
-        const spokenText = event.results[0][0].transcript;
-        analyzeSpeech(originalText, spokenText);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+            speechTimestamps.push(Date.now());
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
       };
 
       activeRecognition.onerror = (event) => {
@@ -341,6 +562,8 @@
 
       activeRecognition.onend = () => {
         resetRecUi();
+        const durationSec = (Date.now() - recStartTime) / 1000;
+        analyzeSpeech(originalText, finalTranscript, durationSec);
       };
 
       activeRecognition.start();
@@ -358,33 +581,85 @@
       document.getElementById('btnRecStop').disabled = true;
     }
 
-    function analyzeSpeech(original, spoken) {
-      document.getElementById('recStatus').innerText = '判定が完了しました。下部の評価結果を確認してください。';
-      
-      const origWords = original.match(/[a-zA-Z0-9']+/g) || [];
-      const spokenWords = (spoken.match(/[a-zA-Z0-9']+/g) || []).map(w => w.toLowerCase());
+    function analyzeSpeech(original, spoken, durationSec) {
+      document.getElementById('recStatus').innerText = '判定が完了しました。下の分析結果を確認してください。';
+
+      // 1. WPM（発音スピード）の計算
+      const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
+      const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
+      document.getElementById('wpmVal').innerText = wpm;
+
+      // チャンク構造と単語の抽出
+      const rawTokens = original.split(/(\s+|\/)/);
+      const spokenWords = spokenWordsAll.map(w => w.toLowerCase());
 
       const wordDisplay = document.getElementById('wordDisplay');
       wordDisplay.innerHTML = '';
       globalWeakWords = [];
-      let matchCount = 0;
 
+      let totalPoints = 0;
+      let totalWords = 0;
       let spokenIndex = 0;
-      origWords.forEach(word => {
-        const cleanWord = word.toLowerCase();
-        const foundPos = spokenWords.indexOf(cleanWord, spokenIndex);
+
+      let chunkCount = 0;
+      let chunkCorrectCount = 0;
+      let hasChunks = original.includes('/');
+
+      rawTokens.forEach(token => {
+        if (!token.trim()) return;
+
+        if (token === '/') {
+          chunkCount++;
+          const slashSpan = document.createElement('span');
+          slashSpan.className = 'chunk-divider';
+          slashSpan.innerText = '/';
+          wordDisplay.appendChild(slashSpan);
+          return;
+        }
+
+        const cleanWord = token.replace(/[^a-zA-Z0-9']/g, '').toLowerCase();
+        if (!cleanWord) return;
+
+        totalWords++;
+        
+        let matchQuality = 'again'; // 'perfect', 'near', 'again'
+        let foundPos = -1;
+
+        // 音声認識単語とのマッチング・3段階評価判定
+        for (let i = spokenIndex; i < Math.min(spokenIndex + 5, spokenWords.length); i++) {
+          const sWord = spokenWords[i];
+          if (sWord === cleanWord) {
+            matchQuality = 'perfect';
+            foundPos = i;
+            break;
+          } else {
+            const dist = getLevenshteinDistance(cleanWord, sWord);
+            if (dist <= 2 && cleanWord.length > 2) {
+              matchQuality = 'near';
+              foundPos = i;
+              break;
+            }
+          }
+        }
 
         const span = document.createElement('span');
         span.className = 'word ';
 
-        if (foundPos !== -1) {
-          span.className += 'word-correct';
-          span.innerText = word;
-          matchCount++;
+        if (matchQuality === 'perfect') {
+          span.className += 'word-perfect';
+          span.innerText = token;
+          totalPoints += 1.0;
           spokenIndex = foundPos + 1;
+          chunkCorrectCount++;
+        } else if (matchQuality === 'near') {
+          span.className += 'word-near';
+          span.innerText = token;
+          totalPoints += 0.6;
+          spokenIndex = foundPos + 1;
+          chunkCorrectCount++;
         } else {
-          span.className += 'word-incorrect';
-          span.innerText = word;
+          span.className += 'word-again';
+          span.innerText = token;
           if (!globalWeakWords.includes(cleanWord)) {
             globalWeakWords.push(cleanWord);
           }
@@ -392,12 +667,25 @@
         wordDisplay.appendChild(span);
       });
 
-      const score = origWords.length > 0 ? Math.round((matchCount / origWords.length) * 100) : 0;
-      document.getElementById('scoreVal').innerText = score;
+      // 総合伝わる度スコア (%)
+      const finalScore = totalWords > 0 ? Math.round((totalPoints / totalWords) * 100) : 0;
+      document.getElementById('scoreVal').innerText = finalScore;
+
+      // チャンク精度 (%)
+      const chunkMetricCard = document.getElementById('chunkMetricCard');
+      if (hasChunks) {
+        const chunkScore = totalWords > 0 ? Math.round((chunkCorrectCount / totalWords) * 100) : 0;
+        document.getElementById('chunkVal').innerText = chunkScore;
+        chunkMetricCard.style.display = 'block';
+      } else {
+        chunkMetricCard.style.display = 'none';
+      }
+
       document.getElementById('resultArea').style.display = 'block';
 
       renderWeakWords();
 
+      // GASへの結果自動送信
       const studentId = document.getElementById('studentId').value.trim();
       const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
       
@@ -419,7 +707,8 @@
           taskName: taskName,
           originalText: original,
           spokenText: spoken,
-          score: score,
+          score: finalScore,
+          wpm: wpm,
           weakWords: globalWeakWords
         })
       });
@@ -440,7 +729,7 @@
         const div = document.createElement('div');
         div.className = 'weak-card';
         div.innerHTML = `
-          <strong style="font-size: 17px; color: #0f172a;">${word}</strong>
+          <strong style="font-size: 17px; color: var(--text-main);">${word}</strong>
           <div>
             <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">音声を聞く</button>
             <button class="btn-primary" onclick="testSingleWord('${word}', this)">発音テスト</button>
@@ -459,16 +748,16 @@
 
       const resultSpan = btnElement.nextElementSibling;
       resultSpan.innerText = '聞き取り中...';
-      resultSpan.style.color = '#64748b';
+      resultSpan.style.color = 'var(--text-sub)';
 
       recognition.onresult = (event) => {
         const spoken = event.results[0][0].transcript.toLowerCase().trim();
         if (spoken.includes(targetWord.toLowerCase())) {
           resultSpan.innerText = '正解 (PERFECT)';
-          resultSpan.style.color = '#15803d';
+          resultSpan.style.color = 'var(--color-perfect)';
         } else {
           resultSpan.innerText = `不一致 (${spoken})`;
-          resultSpan.style.color = '#b91c1c';
+          resultSpan.style.color = 'var(--color-again)';
         }
       };
 
