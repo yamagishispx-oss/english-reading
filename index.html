@@ -25,7 +25,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       padding: 20px 16px;
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       color: var(--text-main);
       background: var(--bg-main);
@@ -74,51 +74,46 @@
       padding-bottom: 8px;
       margin-bottom: 14px;
     }
-    .action-grid {
+    .grid-2col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
       margin-bottom: 16px;
     }
-    @media (max-width: 560px) {
-      .action-grid {
+    @media (max-width: 600px) {
+      .grid-2col {
         grid-template-columns: 1fr;
       }
     }
-    .tab-container {
-      display: flex;
-      background: #e2e8f0;
-      padding: 4px;
+    .script-box {
+      padding: 14px;
       border-radius: 10px;
-      margin-bottom: 16px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 9px;
-      font-size: 14px;
-      font-weight: 700;
-      border: none;
-      background: transparent;
-      color: var(--text-sub);
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
       transition: all 0.2s ease;
     }
-    .tab-btn.active {
-      background: var(--surface);
-      color: var(--primary);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    .script-box.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+      background: #f0f9ff;
     }
-    label { font-weight: 600; font-size: 13.5px; color: var(--text-sub); }
+    .script-box-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    label { font-weight: 600; font-size: 13px; color: var(--text-sub); }
     input[type="text"], textarea, select {
       width: 100%;
-      padding: 10px;
-      font-size: 14.5px;
+      padding: 9px;
+      font-size: 14px;
       box-sizing: border-box;
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      margin-top: 6px;
+      margin-top: 4px;
       background: #ffffff;
       color: var(--text-main);
     }
@@ -165,7 +160,6 @@
       padding: 12px;
       border-radius: 8px;
       text-align: center;
-      position: relative;
     }
     .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
     .metric-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
@@ -204,7 +198,7 @@
       border-radius: 8px;
       margin-top: 8px;
     }
-    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 6px; font-size: 13px; }
+    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 6px; font-size: 12.5px; }
     .legend { display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; margin-bottom: 10px; }
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
@@ -233,45 +227,56 @@
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
 
-  <!-- モード選択 -->
-  <div class="tab-container">
-    <button id="tabTeacher" class="tab-btn active" onclick="switchMode('teacher')">配信課題</button>
-    <button id="tabOriginal" class="tab-btn" onclick="switchMode('original')">オリジナル原稿</button>
-  </div>
-
-  <!-- 原稿の用意 -->
+  <!-- 原稿の用意（左右2カラム配置） -->
   <div class="card">
     <h2>
       <span>原稿の準備</span>
       <button class="btn-auto-chunk" onclick="applyAutoChunking()">🪄 自動チャンク区切り</button>
     </h2>
-    <div id="modeTeacherArea">
-      <label>練習する課題を選択してください:</label>
-      <select id="taskSelect" onchange="onTaskChange()">
-        <option value="">読み込み中...</option>
-      </select>
-    </div>
-    <div id="modeOriginalArea" style="display:none;">
-      <div style="margin-bottom: 10px;">
-        <label>対象の授業名・単元名を選択してください:</label>
-        <select id="originalCategorySelect">
-          <option value="">読み込み中...</option>
-        </select>
+
+    <div class="grid-2col">
+      <!-- 左：オリジナル原稿 -->
+      <div class="script-box" id="boxOriginal">
+        <div class="script-box-title">
+          <input type="radio" id="modeRadioOriginal" name="modeRadio" value="original" onchange="setScriptMode('original')">
+          <label for="modeRadioOriginal" style="color: var(--text-main); font-size: 14px; cursor: pointer;">① オリジナル原稿を使う</label>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label>授業名・単元名:</label>
+          <select id="originalCategorySelect" onchange="onCategoryChange()">
+            <option value="">読み込み中...</option>
+          </select>
+        </div>
+        <div>
+          <label>画像から文字読み込み (OCR):</label>
+          <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px; font-size:12px;">
+          <div id="ocrStatus"></div>
+        </div>
       </div>
-      <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-        <label>画像から文字を読み込む（OCR）:</label><br>
-        <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px;">
-        <div id="ocrStatus"></div>
+
+      <!-- 右：配信課題 -->
+      <div class="script-box active" id="boxTeacher">
+        <div class="script-box-title">
+          <input type="radio" id="modeRadioTeacher" name="modeRadio" value="teacher" checked onchange="setScriptMode('teacher')">
+          <label for="modeRadioTeacher" style="color: var(--text-main); font-size: 14px; cursor: pointer;">② 配信課題を使う</label>
+        </div>
+        <div>
+          <label>課題を選択:</label>
+          <select id="taskSelect" onchange="onTaskChange()">
+            <option value="">読み込み中...</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div style="margin-top: 10px;">
+
+    <div>
       <label>英文の確認・編集（ / で区切り位置を指定可能）:</label>
       <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
     </div>
   </div>
 
   <!-- お手本再生と録音の横並びエリア -->
-  <div class="action-grid">
+  <div class="grid-2col">
     <!-- 音声再生 -->
     <div class="card" style="margin-bottom: 0;">
       <h2>音声再生（お手本）</h2>
@@ -301,23 +306,20 @@
   </div>
 
   <!-- 評価結果ダッシュボード -->
-  <div class="card" id="resultArea" style="display:none;">
+  <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
     <h2>評価結果分析</h2>
     
-    <!-- WPMの重要性ミニガイド -->
     <div class="wpm-info-box">
       ⚡ <strong>WPM（Words Per Minute）とは？</strong><br>
       1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力にそのまま直結します！
     </div>
 
-    <!-- メトリクス表示 -->
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">伝わる度（総合）</div>
         <div class="metric-value" id="scoreVal">0<span class="metric-unit"> / 100</span></div>
       </div>
       
-      <!-- WPM強調表示カード -->
       <div class="metric-card" style="background: #f0f9ff; border-color: #bae6fd;">
         <div class="metric-label">発話スピード (WPM)</div>
         <div class="metric-value" id="wpmVal" style="color: #0284c7;">0</div>
@@ -363,7 +365,7 @@
 
   <script>
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzisAR6N-lJwFsODd3wK5MUDrDP8nwL8Ex6kjMGi5mvzL2fzGzSXvWYZhzb9RF5MV-u/exec';
-    let currentMode = 'teacher';
+    let currentMode = 'teacher'; // 'teacher' または 'original'
     let teacherTaskList = [];
     let originalCategoryList = [];
     let globalWeakWords = [];
@@ -393,8 +395,10 @@
               opt.innerText = t.title;
               taskSelect.appendChild(opt);
             });
+            // 初期表示で最初の配信課題を反映
             onTaskChange();
           }
+
           originalCategoryList = data.originalCategories || [];
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
@@ -420,28 +424,40 @@
       localStorage.setItem('english_app_student_id', val);
     }
 
-    function switchMode(mode) {
+    // 原稿モード（オリジナル vs 配信課題）の切替
+    function setScriptMode(mode) {
       stopAudio();
       currentMode = mode;
-      document.getElementById('tabTeacher').className = 'tab-btn ' + (mode === 'teacher' ? 'active' : '');
-      document.getElementById('tabOriginal').className = 'tab-btn ' + (mode === 'original' ? 'active' : '');
       
-      document.getElementById('modeTeacherArea').style.display = mode === 'teacher' ? 'block' : 'none';
-      document.getElementById('modeOriginalArea').style.display = mode === 'original' ? 'block' : 'none';
-      
-      if (mode === 'teacher') {
-        onTaskChange();
+      const boxOriginal = document.getElementById('boxOriginal');
+      const boxTeacher = document.getElementById('boxTeacher');
+      const radioOriginal = document.getElementById('modeRadioOriginal');
+      const radioTeacher = document.getElementById('modeRadioTeacher');
+
+      if (mode === 'original') {
+        radioOriginal.checked = true;
+        boxOriginal.classList.add('active');
+        boxTeacher.classList.remove('active');
       } else {
-        document.getElementById('sentence').value = '';
+        radioTeacher.checked = true;
+        boxTeacher.classList.add('active');
+        boxOriginal.classList.remove('active');
+        onTaskChange(); // 配信課題の内容をセット
       }
     }
 
     function onTaskChange() {
       stopAudio();
+      setScriptMode('teacher');
       const idx = document.getElementById('taskSelect').value;
       if (idx !== "" && teacherTaskList[idx]) {
         document.getElementById('sentence').value = teacherTaskList[idx].text;
       }
+    }
+
+    function onCategoryChange() {
+      stopAudio();
+      setScriptMode('original');
     }
 
     function autoChunkText(text) {
@@ -461,6 +477,7 @@
 
     function processImage(input) {
       if (!input.files || !input.files[0]) return;
+      setScriptMode('original');
       const file = input.files[0];
       const status = document.getElementById('ocrStatus');
       
@@ -617,6 +634,258 @@
       const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
       const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
       
-      // WPM画面表示とバッジ判定
       document.getElementById('wpmVal').innerText = wpm;
-      const
+      const wpmBadge = document.getElementById('wpmBadge');
+      if (wpm >= 100 && wpm <= 140) {
+        wpmBadge.innerText = '🎯 ターゲット達成';
+        wpmBadge.className = 'wpm-badge badge-target';
+      } else if (wpm < 100) {
+        wpmBadge.innerText = '🐢 ゆっくりめ';
+        wpmBadge.className = 'wpm-badge badge-slow';
+      } else {
+        wpmBadge.innerText = '⚡ 速め';
+        wpmBadge.className = 'wpm-badge badge-fast';
+      }
+
+      const rawTokens = original.split(/(\s+|\/)/);
+      const spokenWords = spokenWordsAll.map(w => w.toLowerCase());
+      const wordDisplay = document.getElementById('wordDisplay');
+      wordDisplay.innerHTML = '';
+      globalWeakWords = [];
+
+      let totalWords = 0;
+      let accuracyPoints = 0;
+      let spokenIndex = 0;
+      let chunkCorrectCount = 0;
+      let hasChunks = original.includes('/');
+
+      rawTokens.forEach(token => {
+        if (!token.trim()) return;
+        if (token === '/') {
+          const slashSpan = document.createElement('span');
+          slashSpan.className = 'chunk-divider';
+          slashSpan.innerText = '/';
+          wordDisplay.appendChild(slashSpan);
+          return;
+        }
+        const cleanWord = token.replace(/[^a-zA-Z0-9']/g, '').toLowerCase();
+        if (!cleanWord) return;
+        totalWords++;
+        
+        let matchQuality = 'again';
+        let foundPos = -1;
+
+        for (let i = spokenIndex; i < Math.min(spokenIndex + 3, spokenWords.length); i++) {
+          const sWord = spokenWords[i];
+          if (sWord === cleanWord) {
+            matchQuality = 'perfect';
+            foundPos = i;
+            break;
+          } else {
+            const dist = getLevenshteinDistance(cleanWord, sWord);
+            if (cleanWord.length >= 5 && dist <= 1) {
+              matchQuality = 'near';
+              foundPos = i;
+              break;
+            }
+          }
+        }
+
+        const span = document.createElement('span');
+        span.className = 'word ';
+        if (matchQuality === 'perfect') {
+          span.className += 'word-perfect';
+          span.innerText = token;
+          accuracyPoints += 1.0;
+          spokenIndex = foundPos + 1;
+          chunkCorrectCount++;
+        } else if (matchQuality === 'near') {
+          span.className += 'word-near';
+          span.innerText = token;
+          accuracyPoints += 0.3;
+          spokenIndex = foundPos + 1;
+          chunkCorrectCount++;
+        } else {
+          span.className += 'word-again';
+          span.innerText = token;
+          if (!globalWeakWords.includes(cleanWord)) {
+            globalWeakWords.push(cleanWord);
+          }
+        }
+        wordDisplay.appendChild(span);
+      });
+
+      const accuracyScore = totalWords > 0 ? Math.round((accuracyPoints / totalWords) * 75) : 0;
+      
+      let fluencyScore = 0;
+      if (wpm >= 100 && wpm <= 140) {
+        fluencyScore += 12;
+      } else if (wpm >= 80 && wpm < 100) {
+        fluencyScore += 8;
+      } else if (wpm > 140 && wpm <= 160) {
+        fluencyScore += 8;
+      } else {
+        fluencyScore += 4;
+      }
+      
+      const extraWords = Math.max(0, spokenWords.length - totalWords);
+      if (extraWords === 0) {
+        fluencyScore += 13;
+      } else if (extraWords <= 2) {
+        fluencyScore += 9;
+      } else if (extraWords <= 5) {
+        fluencyScore += 5;
+      } else {
+        fluencyScore += 2;
+      }
+
+      const finalScore = Math.min(100, accuracyScore + fluencyScore);
+
+      document.getElementById('scoreVal').innerHTML = `${finalScore}<span class="metric-unit"> / 100</span>`;
+      document.getElementById('accuracyVal').innerHTML = `${accuracyScore}<span class="metric-unit"> / 75</span>`;
+      document.getElementById('fluencyVal').innerHTML = `${fluencyScore}<span class="metric-unit"> / 25</span>`;
+
+      const chunkMetricCard = document.getElementById('chunkMetricCard');
+      if (hasChunks) {
+        const chunkScore = totalWords > 0 ? Math.round((chunkCorrectCount / totalWords) * 100) : 0;
+        document.getElementById('chunkVal').innerHTML = `${chunkScore}<span class="metric-unit"> / 100</span>`;
+        chunkMetricCard.style.display = 'block';
+      } else {
+        chunkMetricCard.style.display = 'none';
+      }
+
+      generateHighSchoolAdviceWithWPM(finalScore, accuracyScore, fluencyScore, wpm, extraWords, globalWeakWords);
+
+      document.getElementById('resultArea').style.display = 'block';
+      renderWeakWords();
+
+      const studentId = document.getElementById('studentId').value.trim();
+      const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
+      
+      let taskName = '';
+      if (currentMode === 'teacher') {
+        const select = document.getElementById('taskSelect');
+        taskName = select.options[select.selectedIndex]?.text || '課題未選択';
+      } else {
+        const select = document.getElementById('originalCategorySelect');
+        taskName = select.value || select.options[select.selectedIndex]?.text || 'オリジナル英作文';
+      }
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          studentId: studentId,
+          mode: modeName,
+          taskName: taskName,
+          originalText: original,
+          spokenText: spoken,
+          score: finalScore,
+          weakWords: globalWeakWords
+        })
+      });
+    }
+
+    function generateHighSchoolAdviceWithWPM(total, accuracy, fluency, wpm, extraWords, weakWords) {
+      const titleElem = document.getElementById('adviceTitle');
+      const msgElem = document.getElementById('adviceMessage');
+      const listElem = document.getElementById('adviceActionList');
+      listElem.innerHTML = '';
+
+      let title = '';
+      let msg = '';
+      let actions = [];
+
+      let wpmFeedback = '';
+      if (wpm >= 100 && wpm <= 140) {
+        wpmFeedback = `スピードは <strong>${wpm} WPM</strong> で、目標の範囲内（100〜130 WPM）にバッチリ入っています！`;
+      } else if (wpm < 100) {
+        const diff = 100 - wpm;
+        wpmFeedback = `現在のスピードは <strong>${wpm} WPM</strong> です。目標（100 WPM）まであと <strong>+${diff} WPM</strong> スピードアップを目指しましょう！`;
+      } else {
+        wpmFeedback = `スピードは <strong>${wpm} WPM</strong> でかなり速めです！少し落ち着いて丁寧にはっきり発声するとさらに伝わりやすくなります。`;
+      }
+
+      if (total >= 90) {
+        title = '🌟 PERFECT! 発音もスピードも最高レベル！';
+        msg = `${wpmFeedback} 発音の正確さとリズムが非常に高いレベルで噛み合っています。`;
+        actions.push('お手本の速度を「1.1x (約130 WPM)」にセットして、さらにハイテンポな音読にチャレンジしよう！');
+      } else if (total >= 75) {
+        title = '👍 GOOD! 伝わる英語になっています！';
+        msg = `${wpmFeedback} 基礎的な発音は通じています。`;
+        if (wpm < 100) {
+          actions.push(`「お手本再生（標準0.9x / 約110 WPM）」に合わせて声を重ねる「オーバーラッピング」でスピード感を体に覚えさせよう！`);
+        }
+        if (extraWords > 2) {
+          actions.push('途中でつっかえて言い直した部分でWPMが低下しています。止まらず最後まで読み切る練習をしてみよう。');
+        }
+      } else if (total >= 60) {
+        title = '💪 NICE TRY! スピードと正確さをバランスよく！';
+        msg = `${wpmFeedback} 英文を塊（チャンク）で捉えることで、自然とWPMが向上します。`;
+        actions.push('「🪄 自動チャンク区切り」を活用し、区切りごとに一息でサッと読む練習をしよう！');
+        if (weakWords.length > 0) {
+          actions.push('つっかかった赤色の単語を、下の「苦手単語トレーニング」でサクッとマスターしておこう！');
+        }
+      } else {
+        title = '🌱 KEEP GOING! まずはお手本のWPMに慣れよう！';
+        msg = `${wpmFeedback} 最初から速く読む必要はありません。正しい発音と音の繋がりを覚えることが近道です。`;
+        actions.push('「ゆっくり (0.7x)」でお手本を聞き、口の動きを確認してから一文ずつ真似して音読してみよう。');
+      }
+
+      titleElem.innerText = title;
+      msgElem.innerHTML = msg;
+      actions.forEach(act => {
+        const li = document.createElement('li');
+        li.innerText = act;
+        listElem.appendChild(li);
+      });
+    }
+
+    function renderWeakWords() {
+      const weakArea = document.getElementById('weakArea');
+      const container = document.getElementById('weakWordsList');
+      container.innerHTML = '';
+      if (globalWeakWords.length === 0) {
+        weakArea.style.display = 'none';
+        return;
+      }
+      weakArea.style.display = 'block';
+      globalWeakWords.forEach(word => {
+        const div = document.createElement('div');
+        div.className = 'weak-card';
+        div.innerHTML = `
+          <strong style="font-size: 16px; color: var(--text-main);">${word}</strong>
+          <div>
+            <button class="btn-sub" onclick="playAudioText('${word}', 0.7)">音声を聞く</button>
+            <button class="btn-primary" onclick="testSingleWord('${word}', this)">発音テスト</button>
+            <span class="test-result" style="margin-left:6px; font-weight:bold;"></span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function testSingleWord(targetWord, btnElement) {
+      stopAudio();
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      const resultSpan = btnElement.nextElementSibling;
+      resultSpan.innerText = '聞き取り中...';
+      resultSpan.style.color = 'var(--text-sub)';
+      recognition.onresult = (event) => {
+        const spoken = event.results[0][0].transcript.toLowerCase().trim();
+        if (spoken.includes(targetWord.toLowerCase())) {
+          resultSpan.innerText = '正解 (PERFECT)';
+          resultSpan.style.color = 'var(--color-perfect)';
+        } else {
+          resultSpan.innerText = `不一致 (${spoken})`;
+          resultSpan.style.color = 'var(--color-again)';
+        }
+      };
+      recognition.onerror = () => { resultSpan.innerText = 'エラー'; };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
