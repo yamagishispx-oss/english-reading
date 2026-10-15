@@ -215,19 +215,16 @@
   </style>
 </head>
 <body>
-  <!-- アプリタイトルヘッダー -->
   <div class="header-card">
     <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」と「適正スピード」を目指そう！ 〜</div>
   </div>
 
-  <!-- 生徒情報入力 -->
   <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
     <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
 
-  <!-- 原稿の用意（左右2カラム配置） -->
   <div class="card">
     <h2>
       <span>原稿の準備</span>
@@ -275,9 +272,7 @@
     </div>
   </div>
 
-  <!-- お手本再生と録音の横並びエリア -->
   <div class="grid-2col">
-    <!-- 音声再生 -->
     <div class="card" style="margin-bottom: 0;">
       <h2>音声再生（お手本）</h2>
       <div style="margin-bottom: 8px;">
@@ -294,7 +289,6 @@
       </div>
     </div>
 
-    <!-- 音読録音 -->
     <div class="card" style="margin-bottom: 0;">
       <h2>音読録音</h2>
       <div>
@@ -305,7 +299,6 @@
     </div>
   </div>
 
-  <!-- 評価結果ダッシュボード -->
   <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
     <h2>評価結果分析</h2>
     
@@ -341,7 +334,6 @@
       </div>
     </div>
 
-    <!-- 高校生向け具体アドバイスカード -->
     <div id="adviceCard" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
       <div style="font-weight: 800; color: #166534; font-size: 15px; margin-bottom: 6px;" id="adviceTitle">💡 次のステップへのアドバイス</div>
       <div id="adviceMessage" style="font-size: 13.5px; color: #14532d; line-height: 1.6;"></div>
@@ -356,7 +348,6 @@
     <div id="wordDisplay" style="line-height: 2.1;"></div>
   </div>
 
-  <!-- 苦手単語トレーニング -->
   <div class="card" id="weakArea" style="display:none;">
     <h2>苦手単語トレーニング</h2>
     <p style="font-size: 12.5px; color: var(--text-sub);">通じなかった単語の個別発音チェックです。</p>
@@ -365,7 +356,7 @@
 
   <script>
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzisAR6N-lJwFsODd3wK5MUDrDP8nwL8Ex6kjMGi5mvzL2fzGzSXvWYZhzb9RF5MV-u/exec';
-    let currentMode = 'teacher'; // 'teacher' または 'original'
+    let currentMode = 'teacher';
     let teacherTaskList = [];
     let originalCategoryList = [];
     let globalWeakWords = [];
@@ -395,7 +386,6 @@
               opt.innerText = t.title;
               taskSelect.appendChild(opt);
             });
-            // 初期表示で最初の配信課題を反映
             onTaskChange();
           }
 
@@ -424,7 +414,6 @@
       localStorage.setItem('english_app_student_id', val);
     }
 
-    // 原稿モード（オリジナル vs 配信課題）の切替
     function setScriptMode(mode) {
       stopAudio();
       currentMode = mode;
@@ -442,7 +431,7 @@
         radioTeacher.checked = true;
         boxTeacher.classList.add('active');
         boxOriginal.classList.remove('active');
-        onTaskChange(); // 配信課題の内容をセット
+        onTaskChange();
       }
     }
 
