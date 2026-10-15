@@ -22,7 +22,6 @@
       --color-again: #dc2626;
       --bg-again: #fee2e2;
     }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       padding: 20px 16px;
@@ -32,7 +31,6 @@
       background: var(--bg-main);
       line-height: 1.5;
     }
-
     .header-card {
       background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
       color: #ffffff;
@@ -56,7 +54,6 @@
       color: #38bdf8;
       letter-spacing: 0.02em;
     }
-
     .card {
       background: var(--surface);
       padding: 20px;
@@ -65,7 +62,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
       margin-bottom: 16px;
     }
-
     h2 {
       margin-top: 0;
       color: var(--text-main);
@@ -78,7 +74,6 @@
       padding-bottom: 8px;
       margin-bottom: 14px;
     }
-
     .action-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -90,7 +85,6 @@
         grid-template-columns: 1fr;
       }
     }
-
     .tab-container {
       display: flex;
       background: #e2e8f0;
@@ -116,7 +110,6 @@
       color: var(--primary);
       box-shadow: 0 2px 5px rgba(0,0,0,0.08);
     }
-
     label { font-weight: 600; font-size: 13.5px; color: var(--text-sub); }
     input[type="text"], textarea, select {
       width: 100%;
@@ -130,7 +123,6 @@
       color: var(--text-main);
     }
     textarea { height: 95px; font-family: inherit; resize: vertical; }
-
     button {
       padding: 9px 15px;
       font-size: 13.5px;
@@ -161,7 +153,6 @@
       cursor: pointer;
     }
     .btn-auto-chunk:hover { background: #e2e8f0; }
-
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -179,7 +170,6 @@
     .metric-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
     .metric-unit { font-size: 12px; font-weight: 600; color: #64748b; }
     .metric-desc { font-size: 11px; font-weight: 600; color: #0284c7; margin-top: 2px; }
-
     .word {
       display: inline-block;
       padding: 3px 8px;
@@ -192,7 +182,6 @@
     .word-near { background: var(--bg-near); color: var(--color-near); border: 1px solid #fde68a; }
     .word-again { background: var(--bg-again); color: var(--color-again); border: 1px solid #fecdd3; }
     .chunk-divider { color: #0284c7; font-weight: 800; margin: 0 4px; font-size: 18px; }
-
     .weak-card {
       display: flex;
       align-items: center;
@@ -210,7 +199,6 @@
   </style>
 </head>
 <body>
-
   <!-- アプリタイトルヘッダー -->
   <div class="header-card">
     <h1>英語音読トレーニング</h1>
@@ -235,14 +223,12 @@
       <span>原稿の準備</span>
       <button class="btn-auto-chunk" onclick="applyAutoChunking()">🪄 自動チャンク区切り</button>
     </h2>
-
     <div id="modeTeacherArea">
       <label>練習する課題を選択してください:</label>
       <select id="taskSelect" onchange="onTaskChange()">
         <option value="">読み込み中...</option>
       </select>
     </div>
-
     <div id="modeOriginalArea" style="display:none;">
       <div style="margin-bottom: 10px;">
         <label>対象の授業名・単元名を選択してください:</label>
@@ -250,14 +236,12 @@
           <option value="">読み込み中...</option>
         </select>
       </div>
-
       <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 10px;">
         <label>画像から文字を読み込む（OCR）:</label><br>
         <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px;">
         <div id="ocrStatus"></div>
       </div>
     </div>
-
     <div style="margin-top: 10px;">
       <label>英文の確認・編集（ / で区切り位置を指定可能）:</label>
       <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
@@ -283,7 +267,7 @@
       </div>
     </div>
 
-    <!-- 音読録音 -->
+    <!-- 音読録音（手動Start/Stop対応） -->
     <div class="card" style="margin-bottom: 0;">
       <h2>音読録音</h2>
       <div>
@@ -297,11 +281,20 @@
   <!-- 評価結果ダッシュボード -->
   <div class="card" id="resultArea" style="display:none;">
     <h2>評価結果分析</h2>
-
+    
+    <!-- メトリクス表示 -->
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">伝わる度（総合）</div>
         <div class="metric-value" id="scoreVal">0<span class="metric-unit"> / 100</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">発音正確性</div>
+        <div class="metric-value" id="accuracyVal" style="color: #2563eb;">0<span class="metric-unit"> / 75</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">流暢さ・スムーズさ</div>
+        <div class="metric-value" id="fluencyVal" style="color: #0d9488;">0<span class="metric-unit"> / 25</span></div>
       </div>
       <div class="metric-card" id="chunkMetricCard" style="display:none;">
         <div class="metric-label">チャンク精度</div>
@@ -310,8 +303,15 @@
       <div class="metric-card">
         <div class="metric-label">発話スピード</div>
         <div class="metric-value" id="wpmVal">0<span class="metric-unit"> WPM</span></div>
-        <div class="metric-desc" id="wpmDesc">目安: 100〜130 WPM</div>
+        <div class="metric-desc" id="wpmDesc">目標: 100〜130 WPM</div>
       </div>
+    </div>
+
+    <!-- 高校生向け具体アドバイスカード -->
+    <div id="adviceCard" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+      <div style="font-weight: 800; color: #166534; font-size: 15px; margin-bottom: 6px;" id="adviceTitle">💡 次のステップへのアドバイス</div>
+      <div id="adviceMessage" style="font-size: 13.5px; color: #14532d; line-height: 1.6;"></div>
+      <ul id="adviceActionList" style="font-size: 13px; color: #166534; margin: 8px 0 0 0; padding-left: 20px; line-height: 1.5;"></ul>
     </div>
 
     <div class="legend">
@@ -319,7 +319,6 @@
       <div class="legend-item"><div class="legend-dot" style="background:var(--color-near)"></div> NEAR</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--color-again)"></div> TRY AGAIN</div>
     </div>
-
     <div id="wordDisplay" style="line-height: 2.1;"></div>
   </div>
 
@@ -332,20 +331,22 @@
 
   <script>
     const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzisAR6N-lJwFsODd3wK5MUDrDP8nwL8Ex6kjMGi5mvzL2fzGzSXvWYZhzb9RF5MV-u/exec';
-
     let currentMode = 'teacher';
     let teacherTaskList = [];
     let originalCategoryList = [];
     let globalWeakWords = [];
     let activeRecognition = null;
     let recStartTime = 0;
+    
+    // 手動録音管理用フラグと発話累積変数
+    let isManualStop = false;
+    let accumulatedTranscript = '';
 
     window.onload = () => {
       const savedId = localStorage.getItem('english_app_student_id');
       if (savedId) {
         document.getElementById('studentId').value = savedId;
       }
-
       fetch(`${GAS_API_URL}?action=getTasks`)
         .then(res => res.json())
         .then(data => {
@@ -363,8 +364,6 @@
             });
             onTaskChange();
           }
-
-          /* オリジナル原稿シートのA列を参照した選択肢の反映 */
           originalCategoryList = data.originalCategories || [];
           const origSelect = document.getElementById('originalCategorySelect');
           origSelect.innerHTML = '';
@@ -417,7 +416,7 @@
     function autoChunkText(text) {
       if (!text) return '';
       let clean = text.replace(/\s*\/\s*/g, ' ');
-      clean = clean.replace(/([.,?!;:])/g, '$1 /');
+      clean = clean.replace(/([.,?!;:]) /g, '$1 /');
       clean = clean.replace(/\b(because|when|if|that|which|who|where|while|although|so|but|and)\b/gi, '/ $1');
       clean = clean.replace(/\b(in|on|at|to|for|with|from|by|about|into|through)\b/gi, '/ $1');
       return clean.replace(/\/\s*\//g, '/').replace(/^\s*\/\s*/, '').replace(/\/\s*$/, '').trim();
@@ -435,7 +434,6 @@
       const status = document.getElementById('ocrStatus');
       
       status.innerText = '画像から文字を読み取っています...';
-
       Tesseract.recognize(file, 'eng', {
         logger: m => {
           if(m.status === 'recognizing text') {
@@ -461,20 +459,16 @@
       speechSynthesis.speak(uttr);
     }
 
-    /* 再生・停止のシンプル2ボタン制御 */
     function playFullAudio() {
       const text = document.getElementById('sentence').value.replace(/\//g, ' ').trim();
       if (!text) return alert('英文を入力してください');
-
       speechSynthesis.cancel();
       const rate = document.getElementById('speechRate').value;
       const uttr = new SpeechSynthesisUtterance(text);
       uttr.lang = 'en-US';
       uttr.rate = parseFloat(rate);
-
       uttr.onend = () => { updateAudioButtons('stopped'); };
       uttr.onerror = () => { updateAudioButtons('stopped'); };
-
       speechSynthesis.speak(uttr);
       updateAudioButtons('playing');
     }
@@ -487,7 +481,6 @@
     function updateAudioButtons(state) {
       const btnPlay = document.getElementById('btnAudioPlay');
       const btnStop = document.getElementById('btnAudioStop');
-
       if (state === 'playing') {
         btnPlay.innerText = '再生中...';
         btnPlay.disabled = true;
@@ -503,7 +496,6 @@
       const matrix = [];
       for (let i = 0; i <= b.length; i++) matrix[i] = [i];
       for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
       for (let i = 1; i <= b.length; i++) {
         for (let j = 1; j <= a.length; j++) {
           if (b.charAt(i - 1) === a.charAt(j - 1)) {
@@ -519,6 +511,7 @@
       return matrix[b.length][a.length];
     }
 
+    // ① 録音開始（手動スタート・連続録音化）
     function startFullRecognition() {
       stopAudio();
       const studentId = document.getElementById('studentId').value.trim();
@@ -526,50 +519,62 @@
         alert('生徒ID（半角4桁）を正しく入力してください。');
         return;
       }
-
       const originalText = document.getElementById('sentence').value.trim();
       if (!originalText) return alert('英文を入力してください');
-
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) return alert('ブラウザが音声認識に対応していません (Google Chrome推奨)');
 
       activeRecognition = new SpeechRecognition();
       activeRecognition.lang = 'en-US';
       activeRecognition.interimResults = true;
-      
+      activeRecognition.continuous = true; // 無音時でも勝手に終了させない設定
+
+      isManualStop = false;
+      accumulatedTranscript = '';
       recStartTime = Date.now();
 
-      document.getElementById('recStatus').innerText = '録音中... 音読してください。（終了時は「録音終了」を押します）';
+      document.getElementById('recStatus').innerText = '🎙️ 録音中... 読み終わったら「録音終了」を押してください。';
       document.getElementById('btnRecStart').disabled = true;
       document.getElementById('btnRecStop').disabled = false;
 
-      let finalTranscript = '';
-
       activeRecognition.onresult = (event) => {
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
+        let currentFinal = '';
+        for (let i = 0; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
+            currentFinal += event.results[i][0].transcript + ' ';
           }
         }
+        accumulatedTranscript = currentFinal;
       };
 
       activeRecognition.onerror = (event) => {
-        resetRecUi();
-        document.getElementById('recStatus').innerText = 'エラー: ' + event.error;
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          resetRecUi();
+          document.getElementById('recStatus').innerText = 'エラー: ' + event.error;
+        }
       };
 
       activeRecognition.onend = () => {
+        // 手動でストップボタンが押されていない場合は自動再開
+        if (!isManualStop) {
+          try {
+            activeRecognition.start();
+            return;
+          } catch(e) {}
+        }
         resetRecUi();
         const durationSec = (Date.now() - recStartTime) / 1000;
-        analyzeSpeech(originalText, finalTranscript, durationSec);
+        analyzeSpeech(originalText, accumulatedTranscript, durationSec);
       };
 
       activeRecognition.start();
     }
 
+    // ① 録音終了（手動ストップ処理）
     function stopFullRecognition() {
       if (activeRecognition) {
-        document.getElementById('recStatus').innerText = '判定中...';
+        isManualStop = true;
+        document.getElementById('recStatus').innerText = '⏳ 判定中... スコアを計算しています。';
         activeRecognition.stop();
       }
     }
@@ -579,9 +584,9 @@
       document.getElementById('btnRecStop').disabled = true;
     }
 
+    // ② 発話解析（判定厳格化 ＋ ダブル軸スコア ＋ 高校生アドバイス生成）
     function analyzeSpeech(original, spoken, durationSec) {
-      document.getElementById('recStatus').innerText = '判定完了。結果を確認してください。';
-
+      document.getElementById('recStatus').innerText = '判定完了！結果を確認してください。';
       const spokenWordsAll = spoken.match(/[a-zA-Z0-9']+/g) || [];
       const wpm = durationSec > 0 ? Math.round((spokenWordsAll.length / durationSec) * 60) : 0;
       
@@ -597,21 +602,19 @@
 
       const rawTokens = original.split(/(\s+|\/)/);
       const spokenWords = spokenWordsAll.map(w => w.toLowerCase());
-
       const wordDisplay = document.getElementById('wordDisplay');
       wordDisplay.innerHTML = '';
       globalWeakWords = [];
 
-      let totalPoints = 0;
       let totalWords = 0;
+      let accuracyPoints = 0;
       let spokenIndex = 0;
-
       let chunkCorrectCount = 0;
       let hasChunks = original.includes('/');
 
+      // --- 単語ごとの厳格判定（最大75点分） ---
       rawTokens.forEach(token => {
         if (!token.trim()) return;
-
         if (token === '/') {
           const slashSpan = document.createElement('span');
           slashSpan.className = 'chunk-divider';
@@ -619,15 +622,15 @@
           wordDisplay.appendChild(slashSpan);
           return;
         }
-
         const cleanWord = token.replace(/[^a-zA-Z0-9']/g, '').toLowerCase();
         if (!cleanWord) return;
-
         totalWords++;
+        
         let matchQuality = 'again';
         let foundPos = -1;
 
-        for (let i = spokenIndex; i < Math.min(spokenIndex + 5, spokenWords.length); i++) {
+        // 探索窓を「先3単語以内」に制限（飛ばし読み・語順崩れチェック強化）
+        for (let i = spokenIndex; i < Math.min(spokenIndex + 3, spokenWords.length); i++) {
           const sWord = spokenWords[i];
           if (sWord === cleanWord) {
             matchQuality = 'perfect';
@@ -635,7 +638,8 @@
             break;
           } else {
             const dist = getLevenshteinDistance(cleanWord, sWord);
-            if (dist <= 2 && cleanWord.length > 2) {
+            // 5文字以上の長い単語のみ編集距離1までのNEARを許可（4文字以下は完全一致のみ）
+            if (cleanWord.length >= 5 && dist <= 1) {
               matchQuality = 'near';
               foundPos = i;
               break;
@@ -645,17 +649,16 @@
 
         const span = document.createElement('span');
         span.className = 'word ';
-
         if (matchQuality === 'perfect') {
           span.className += 'word-perfect';
           span.innerText = token;
-          totalPoints += 1.0;
+          accuracyPoints += 1.0;
           spokenIndex = foundPos + 1;
           chunkCorrectCount++;
         } else if (matchQuality === 'near') {
           span.className += 'word-near';
           span.innerText = token;
-          totalPoints += 0.6;
+          accuracyPoints += 0.3; // NEARの加点を0.3へ減少
           spokenIndex = foundPos + 1;
           chunkCorrectCount++;
         } else {
@@ -668,9 +671,44 @@
         wordDisplay.appendChild(span);
       });
 
-      const finalScore = totalWords > 0 ? Math.round((totalPoints / totalWords) * 100) : 0;
-      document.getElementById('scoreVal').innerHTML = `${finalScore}<span class="metric-unit"> / 100</span>`;
+      // --- 2軸スコア算出 ---
+      // 1. 発音正確性スコア（75点満点）
+      const accuracyScore = totalWords > 0 ? Math.round((accuracyPoints / totalWords) * 75) : 0;
+      
+      // 2. 流暢さ・スムーズさスコア（25点満点）
+      let fluencyScore = 0;
+      // WPM（発話スピード）判定（最大12点）
+      if (wpm >= 100 && wpm <= 140) {
+        fluencyScore += 12;
+      } else if (wpm >= 80 && wpm < 100) {
+        fluencyScore += 8;
+      } else if (wpm > 140 && wpm <= 160) {
+        fluencyScore += 8;
+      } else {
+        fluencyScore += 4;
+      }
+      
+      // つっかえ・言い直しペナルティ判定（最大13点）
+      const extraWords = Math.max(0, spokenWords.length - totalWords);
+      if (extraWords === 0) {
+        fluencyScore += 13;
+      } else if (extraWords <= 2) {
+        fluencyScore += 9;
+      } else if (extraWords <= 5) {
+        fluencyScore += 5;
+      } else {
+        fluencyScore += 2;
+      }
 
+      // 総合スコア（100点満点）
+      const finalScore = Math.min(100, accuracyScore + fluencyScore);
+
+      // 画面更新
+      document.getElementById('scoreVal').innerHTML = `${finalScore}<span class="metric-unit"> / 100</span>`;
+      document.getElementById('accuracyVal').innerHTML = `${accuracyScore}<span class="metric-unit"> / 75</span>`;
+      document.getElementById('fluencyVal').innerHTML = `${fluencyScore}<span class="metric-unit"> / 25</span>`;
+
+      // チャンク精度
       const chunkMetricCard = document.getElementById('chunkMetricCard');
       if (hasChunks) {
         const chunkScore = totalWords > 0 ? Math.round((chunkCorrectCount / totalWords) * 100) : 0;
@@ -680,9 +718,13 @@
         chunkMetricCard.style.display = 'none';
       }
 
+      // 高校生向け動的アドバイスの生成
+      generateHighSchoolAdvice(finalScore, accuracyScore, fluencyScore, wpm, extraWords, globalWeakWords);
+
       document.getElementById('resultArea').style.display = 'block';
       renderWeakWords();
 
+      // スプレッドシート（GAS）へ送信
       const studentId = document.getElementById('studentId').value.trim();
       const modeName = currentMode === 'teacher' ? '配信課題' : 'オリジナル原稿';
       
@@ -710,16 +752,61 @@
       });
     }
 
+    // 高校1年生向け具体アドバイス生成関数
+    function generateHighSchoolAdvice(total, accuracy, fluency, wpm, extraWords, weakWords) {
+      const titleElem = document.getElementById('adviceTitle');
+      const msgElem = document.getElementById('adviceMessage');
+      const listElem = document.getElementById('adviceActionList');
+      listElem.innerHTML = '';
+
+      let title = '';
+      let msg = '';
+      let actions = [];
+
+      if (total >= 90) {
+        title = '🌟 PERFECT! 素晴らしい音読です！';
+        msg = '発音の正確さ・スムーズさともにハイスコアです！共通テストやスピーキングテストでも自信を持って声を出せるレベルです。';
+        actions.push('次は速度を「1.1x」に上げるか、お手本と同時に声を出す「オーバーラッピング」に挑戦してみよう！');
+      } else if (total >= 75) {
+        title = '👍 GOOD! 伝わる英語になっています！';
+        msg = '基礎的な発音はバッチリ通じています。ここから高得点を目指すカギは「つっかえずになめらかに読むこと」です！';
+        if (extraWords > 2) {
+          actions.push('途中でお手つき（言い直し）がありました。一息で最後まで読み切る練習をしてみよう。');
+        }
+        if (wpm < 100) {
+          actions.push('スピードがややゆったりしています。「お手本再生（0.9x）」をよく聞いてテンポ感を意識してみよう！');
+        }
+      } else if (total >= 60) {
+        title = '💪 NICE TRY! あと少しでブレイクスルー！';
+        msg = '単語の発音自体は届いていますが、迷いやつっかえが見られます。「英語の塊（チャンク）」を意識すると一気に上達します。';
+        actions.push('「🪄 自動チャンク区切り」ボタンを押し、 /（スラッシュ）の区切りごとに息を吸って音読してみよう！');
+        if (weakWords.length > 0) {
+          actions.push('赤色で表示された通じなかった単語を、下部の「苦手単語トレーニング」で個別練習しよう！');
+        }
+      } else {
+        title = '🌱 KEEP GOING! まずは音に慣れることから！';
+        msg = '声が出せていてナイスチャレンジです！まずは正しい音を耳で確認し、口を慣らしていくところからスタートしましょう。';
+        actions.push('速度を「ゆっくり (0.7x)」にしてお手本を聞き、聞こえた通りに真似をして1文ずつ練習してみよう。');
+        actions.push('下部の苦手単語リストにある「音声を聞く」ボタンを押して、口の形を意識しながら音を出してみよう。');
+      }
+
+      titleElem.innerText = title;
+      msgElem.innerText = msg;
+      actions.forEach(act => {
+        const li = document.createElement('li');
+        li.innerText = act;
+        listElem.appendChild(li);
+      });
+    }
+
     function renderWeakWords() {
       const weakArea = document.getElementById('weakArea');
       const container = document.getElementById('weakWordsList');
       container.innerHTML = '';
-
       if (globalWeakWords.length === 0) {
         weakArea.style.display = 'none';
         return;
       }
-
       weakArea.style.display = 'block';
       globalWeakWords.forEach(word => {
         const div = document.createElement('div');
@@ -741,11 +828,9 @@
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-
       const resultSpan = btnElement.nextElementSibling;
       resultSpan.innerText = '聞き取り中...';
       resultSpan.style.color = 'var(--text-sub)';
-
       recognition.onresult = (event) => {
         const spoken = event.results[0][0].transcript.toLowerCase().trim();
         if (spoken.includes(targetWord.toLowerCase())) {
@@ -756,7 +841,6 @@
           resultSpan.style.color = 'var(--color-again)';
         }
       };
-
       recognition.onerror = () => { resultSpan.innerText = 'エラー'; };
       recognition.start();
     }
