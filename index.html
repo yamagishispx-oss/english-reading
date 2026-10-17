@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>英語音読トレーニング - 伝わる英語を目指そう</title>
+  <!-- OCR用のライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -39,179 +40,43 @@
       margin-bottom: 18px;
       text-align: center;
       box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .header-card h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-    }
-    .header-card .sub-message {
-      font-size: 0.92rem;
-      font-weight: 600;
-      margin-top: 8px;
-      color: #38bdf8;
-      letter-spacing: 0.02em;
-    }
-    .card {
-      background: var(--surface);
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-      margin-bottom: 16px;
-    }
-    h2 {
-      margin-top: 0;
-      color: var(--text-main);
-      font-size: 1.02rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 2px solid #f1f5f9;
-      padding-bottom: 8px;
-      margin-bottom: 14px;
-    }
-    .grid-2col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    @media (max-width: 600px) {
-      .grid-2col {
-        grid-template-columns: 1fr;
-      }
-    }
-    .script-box {
-      padding: 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      background: #ffffff;
-      transition: all 0.2s ease;
-    }
-    .script-box.active {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-      background: #f0f9ff;
-    }
-    .script-box-title {
-      font-weight: 700;
-      font-size: 14px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+    .header-card h1 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+    .header-card .sub-message { font-size: 0.92rem; font-weight: 600; margin-top: 8px; color: #38bdf8; }
+    .card { background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 16px; }
+    h2 { margin-top: 0; font-size: 1.02rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 14px; }
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 600px) { .grid-2col { grid-template-columns: 1fr; } }
+    .script-box { padding: 14px; border-radius: 10px; border: 1px solid var(--border-color); background: #ffffff; transition: all 0.2s ease; }
+    .script-box.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15); background: #f0f9ff; }
+    .script-box-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
     label { font-weight: 600; font-size: 13px; color: var(--text-sub); }
-    input[type="text"], textarea, select {
-      width: 100%;
-      padding: 9px;
-      font-size: 14px;
-      box-sizing: border-box;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      margin-top: 4px;
-      background: #ffffff;
-      color: var(--text-main);
-    }
+    input[type="text"], textarea, select { width: 100%; padding: 9px; font-size: 14px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 4px; }
     textarea { height: 95px; font-family: inherit; resize: vertical; }
-    button {
-      padding: 9px 15px;
-      font-size: 13.5px;
-      border: none;
-      border-radius: 7px;
-      cursor: pointer;
-      font-weight: 700;
-      margin-right: 6px;
-      margin-top: 6px;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
+    button { padding: 9px 15px; font-size: 13.5px; border: none; border-radius: 7px; cursor: pointer; font-weight: 700; margin-right: 6px; margin-top: 6px; }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #ffffff; }
     .btn-success { background: #16a34a; color: #ffffff; }
     .btn-danger { background: #dc2626; color: #ffffff; }
     .btn-sub { background: #64748b; color: #ffffff; }
-    .btn-auto-chunk {
-      background: #f1f5f9;
-      color: var(--primary-dark);
-      border: 1px solid #cbd5e1;
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .btn-auto-chunk:hover { background: #e2e8f0; }
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .metric-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-    }
+    .btn-auto-chunk { background: #f1f5f9; color: var(--primary-dark); border: 1px solid #cbd5e1; padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .metric-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center; }
     .metric-label { font-size: 11.5px; font-weight: 700; color: var(--text-sub); }
     .metric-value { font-size: 24px; font-weight: 800; color: var(--primary); margin-top: 2px; }
     .metric-unit { font-size: 12px; font-weight: 600; color: #64748b; }
-    .metric-desc { font-size: 11px; font-weight: 600; color: #0284c7; margin-top: 2px; }
-    .wpm-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      margin-top: 4px;
-    }
+    .wpm-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-top: 4px; }
     .badge-target { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
     .badge-slow { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
     .badge-fast { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
-    .word {
-      display: inline-block;
-      padding: 3px 8px;
-      margin: 3px;
-      border-radius: 5px;
-      font-size: 16.5px;
-      font-weight: 700;
-    }
+    .word { display: inline-block; padding: 3px 8px; margin: 3px; border-radius: 5px; font-size: 16.5px; font-weight: 700; }
     .word-perfect { background: var(--bg-perfect); color: var(--color-perfect); border: 1px solid #bbf7d0; }
-    .word-near { background: var(--bg-near); color: var(--color-near); border: 1px solid #fde68a; }
     .word-again { background: var(--bg-again); color: var(--color-again); border: 1px solid #fecdd3; }
     .chunk-divider { color: #0284c7; font-weight: 800; margin: 0 4px; font-size: 18px; }
-    .weak-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #fff1f2;
-      border: 1px solid #fecdd3;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
-    #ocrStatus { font-weight: 600; color: var(--primary); margin-top: 6px; font-size: 12.5px; }
     .legend { display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; margin-bottom: 10px; }
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
-    .wpm-info-box {
-      background: #eff6ff;
-      border: 1px dashed #93c5fd;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: #1e40af;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
+    .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
   </style>
 </head>
 <body>
@@ -219,43 +84,39 @@
     <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」と「適正スピード」を目指そう！ 〜</div>
   </div>
-
   <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
     <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
-
   <div class="card">
     <h2>
       <span>原稿の準備</span>
       <button class="btn-auto-chunk" onclick="applyAutoChunking()">🪄 自動チャンク区切り</button>
     </h2>
-
     <div class="grid-2col">
       <!-- 左：オリジナル原稿 -->
       <div class="script-box" id="boxOriginal">
         <div class="script-box-title">
           <input type="radio" id="modeRadioOriginal" name="modeRadio" value="original" onchange="setScriptMode('original')">
-          <label for="modeRadioOriginal" style="color: var(--text-main); font-size: 14px; cursor: pointer;">① オリジナル原稿を使う</label>
+          <label for="modeRadioOriginal" style="cursor: pointer;">① オリジナル原稿を使う</label>
         </div>
         <div style="margin-bottom: 8px;">
           <label>授業名・単元名:</label>
-          <select id="originalCategorySelect" onchange="onCategoryChange()">
+          <select id="originalCategorySelect">
             <option value="">データ読み込み中...</option>
           </select>
         </div>
         <div>
           <label>画像から文字読み込み (OCR):</label>
           <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px; font-size:12px;">
-          <div id="ocrStatus"></div>
+          <div id="ocrStatus" style="font-weight:600; color:var(--primary); font-size:12.5px; margin-top:4px;"></div>
         </div>
       </div>
-
       <!-- 右：配信課題 -->
       <div class="script-box active" id="boxTeacher">
         <div class="script-box-title">
           <input type="radio" id="modeRadioTeacher" name="modeRadio" value="teacher" checked onchange="setScriptMode('teacher')">
-          <label for="modeRadioTeacher" style="color: var(--text-main); font-size: 14px; cursor: pointer;">② 配信課題を使う</label>
+          <label for="modeRadioTeacher" style="cursor: pointer;">② 配信課題を使う</label>
         </div>
         <div>
           <label>課題を選択:</label>
@@ -265,13 +126,12 @@
         </div>
       </div>
     </div>
-
     <div>
       <label>英文の確認・編集（ / で区切り位置を指定可能）:</label>
       <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
     </div>
   </div>
-
+  
   <div class="grid-2col">
     <div class="card" style="margin-bottom: 0;">
       <h2>音声再生（お手本）</h2>
@@ -288,24 +148,239 @@
         <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>停止</button>
       </div>
     </div>
-
     <div class="card" style="margin-bottom: 0;">
       <h2>音読録音</h2>
       <div>
         <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
         <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
       </div>
-      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px; min-height: 18px; line-height: 1.3;"></p>
+      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px;"></p>
     </div>
   </div>
-
+  
   <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
     <h2>評価結果分析</h2>
-    
     <div class="wpm-info-box">
       ⚡ <strong>WPM（Words Per Minute）とは？</strong><br>
-      1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力にそのまま直結します！
+      1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力に直結します！
     </div>
+    <div id="resultContent" class="metrics-grid"></div>
+    <div id="chunkResultArea" style="margin-top: 16px;"></div>
+  </div>
 
-    <div class="metrics-grid">
-      <div class="
+  <script>
+    // ==========================================
+    // ① 全体設定とデータ読み込み
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
+    let currentMode = 'teacher';
+
+    // 画面を開いた時の処理
+    window.onload = async function() {
+      // 生徒IDの復元
+      const savedId = localStorage.getItem("studentId");
+      if(savedId) document.getElementById("studentId").value = savedId;
+
+      // GASから課題データを取得
+      try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        const data = await response.json();
+        
+        const taskSelect = document.getElementById("taskSelect");
+        if (taskSelect) {
+          taskSelect.innerHTML = '<option value="">課題を選択してください</option>';
+          data.teacherTasks.forEach(task => {
+            const opt = document.createElement("option");
+            opt.value = task.text; opt.textContent = task.title;
+            taskSelect.appendChild(opt);
+          });
+        }
+        const categorySelect = document.getElementById("originalCategorySelect");
+        if (categorySelect) {
+          categorySelect.innerHTML = '<option value="">カテゴリを選択してください</option>';
+          data.originalCategories.forEach(category => {
+            const opt = document.createElement("option");
+            opt.value = category; opt.textContent = category;
+            categorySelect.appendChild(opt);
+          });
+        }
+      } catch(error) {
+        console.error(error);
+      }
+    };
+
+    function saveStudentId() {
+      localStorage.setItem("studentId", document.getElementById("studentId").value);
+    }
+
+    function setScriptMode(mode) {
+      currentMode = mode;
+      document.getElementById('boxOriginal').classList.toggle('active', mode === 'original');
+      document.getElementById('boxTeacher').classList.toggle('active', mode === 'teacher');
+    }
+
+    function onTaskChange() {
+      if(currentMode === 'teacher') {
+        document.getElementById('sentence').value = document.getElementById('taskSelect').value;
+      }
+    }
+
+    // ==========================================
+    // ② 自動チャンク区切り ＆ 画像読み取り(OCR)
+    // ==========================================
+    function applyAutoChunking() {
+      let text = document.getElementById('sentence').value;
+      if (!text) return alert("英文が入力されていません。");
+      text = text.replace(/([,?!])\s+/g, '$1 / ');
+      document.getElementById('sentence').value = text;
+    }
+
+    async function processImage(input) {
+      if (!input.files || input.files.length === 0) return;
+      document.getElementById('modeRadioOriginal').checked = true;
+      setScriptMode('original');
+      const status = document.getElementById('ocrStatus');
+      status.innerText = "⏳ 画像読み取り中...少々お待ちください";
+      try {
+        const result = await Tesseract.recognize(input.files[0], 'eng');
+        document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
+        status.innerText = "✅ 読み取り完了！";
+      } catch(err) {
+        status.innerText = "❌ エラーが発生しました";
+      }
+    }
+
+    // ==========================================
+    // ③ 音声再生（お手本） API
+    // ==========================================
+    let synth = window.speechSynthesis;
+    function playFullAudio() {
+      stopAudio();
+      let text = document.getElementById('sentence').value.replace(/\//g, '');
+      if(!text) return alert("英文を入力してください");
+      let utterThis = new SpeechSynthesisUtterance(text);
+      utterThis.lang = 'en-US';
+      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
+      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
+      document.getElementById('btnAudioStop').disabled = false;
+      synth.speak(utterThis);
+    }
+    function stopAudio() {
+      synth.cancel();
+      document.getElementById('btnAudioStop').disabled = true;
+    }
+
+    // ==========================================
+    // ④ 音声認識 ＆ 評価システム
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if(recognition) {
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+    }
+    let startTime = 0;
+
+    function startFullRecognition() {
+      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
+      const sid = document.getElementById('studentId').value;
+      if(sid.length !== 4) return alert("生徒IDを4桁で入力してください。");
+      
+      document.getElementById('resultArea').style.display = 'none';
+      document.getElementById('btnRecStart').disabled = true;
+      document.getElementById('btnRecStop').disabled = false;
+      document.getElementById('recStatus').innerText = "🔴 録音中... (話し終わったら「録音終了」を押してください)";
+      
+      startTime = Date.now();
+      recognition.start();
+    }
+
+    function stopFullRecognition() {
+      document.getElementById('btnRecStart').disabled = false;
+      document.getElementById('btnRecStop').disabled = true;
+      document.getElementById('recStatus').innerText = "⏳ 録音データを解析中...";
+      recognition.stop();
+    }
+
+    if(recognition) {
+      recognition.onresult = function(event) {
+        let durationMin = (Date.now() - startTime) / 1000 / 60;
+        let spokenText = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          spokenText += event.results[i][0].transcript + " ";
+        }
+        analyzeAndSend(spokenText.trim(), Math.max(durationMin, 0.01));
+      };
+    }
+
+    function analyzeAndSend(spokenText, durationMin) {
+      const originalText = document.getElementById('sentence').value;
+      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      
+      // WPM計算
+      const wpm = Math.round(cleanSpoken.length / durationMin);
+      let wpmBadge = "badge-target", wpmText = "目標スピード";
+      if(wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
+      if(wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
+
+      // スコア計算と色分け表示
+      let matchCount = 0;
+      let weakWords = [];
+      let renderedChunks = "";
+      
+      const chunks = originalText.split('/');
+      chunks.forEach((chunk, index) => {
+        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
+        if(words.length === 0) return;
+        if(index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
+        
+        words.forEach(w => {
+          if(cleanSpoken.includes(w.toLowerCase())) {
+            matchCount++;
+            renderedChunks += `<span class="word word-perfect">${w}</span>`;
+          } else {
+            weakWords.push(w);
+            renderedChunks += `<span class="word word-again">${w}</span>`;
+          }
+        });
+      });
+
+      const score = cleanOriginal.length > 0 ? Math.round((matchCount / cleanOriginal.length) * 100) : 0;
+
+      // 結果を画面に表示
+      document.getElementById('resultContent').innerHTML = `
+        <div class="metric-card"><div class="metric-label">伝わる度スコア</div><div class="metric-value">${score}<span class="metric-unit">点</span></div></div>
+        <div class="metric-card"><div class="metric-label">スピード (WPM)</div><div class="metric-value">${wpm}<span class="metric-unit">語/分</span></div><div class="wpm-badge ${wpmBadge}">${wpmText}</div></div>
+      `;
+      document.getElementById('chunkResultArea').innerHTML = `
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-perfect)"></div>伝わった単語</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-again)"></div>惜しい・要練習</div>
+        </div>
+        <div style="line-height: 2;">${renderedChunks}</div>
+      `;
+      document.getElementById('resultArea').style.display = 'block';
+      document.getElementById('recStatus').innerText = "✅ 解析完了！結果が表示されました。";
+
+      // GASへデータ送信
+      const sid = document.getElementById('studentId').value;
+      let tName = currentMode === 'teacher' ? document.getElementById('taskSelect').options[document.getElementById('taskSelect').selectedIndex]?.text : document.getElementById('originalCategorySelect').value;
+      
+      fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          studentId: sid,
+          mode: currentMode === 'teacher' ? '配信課題' : 'オリジナル',
+          taskName: tName || "未設定",
+          originalText: originalText,
+          spokenText: spokenText,
+          score: score,
+          weakWords: weakWords.slice(0, 5) // 苦手単語は上位5個まで保存
+        })
+      }).catch(err => console.error(err));
+    }
+  </script>
+</body>
+</html>
