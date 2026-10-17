@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>英語音読トレーニング - 伝わる英語を目指そう</title>
-  <!-- OCR用のライブラリ -->
+  <!-- OCR用の外部ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
@@ -84,10 +84,12 @@
     <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」と「適正スピード」を目指そう！ 〜</div>
   </div>
+
   <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
     <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
+
   <div class="card">
     <h2>
       <span>原稿の準備</span>
@@ -154,7 +156,7 @@
         <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
         <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
       </div>
-      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px;"></p>
+      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px; min-height:18px;"></p>
     </div>
   </div>
   
@@ -165,222 +167,4 @@
       1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力に直結します！
     </div>
     <div id="resultContent" class="metrics-grid"></div>
-    <div id="chunkResultArea" style="margin-top: 16px;"></div>
-  </div>
-
-  <script>
-    // ==========================================
-    // ① 全体設定とデータ読み込み
-    // ==========================================
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
-    let currentMode = 'teacher';
-
-    // 画面を開いた時の処理
-    window.onload = async function() {
-      // 生徒IDの復元
-      const savedId = localStorage.getItem("studentId");
-      if(savedId) document.getElementById("studentId").value = savedId;
-
-      // GASから課題データを取得
-      try {
-        const response = await fetch(GAS_WEB_APP_URL);
-        const data = await response.json();
-        
-        const taskSelect = document.getElementById("taskSelect");
-        if (taskSelect) {
-          taskSelect.innerHTML = '<option value="">課題を選択してください</option>';
-          data.teacherTasks.forEach(task => {
-            const opt = document.createElement("option");
-            opt.value = task.text; opt.textContent = task.title;
-            taskSelect.appendChild(opt);
-          });
-        }
-        const categorySelect = document.getElementById("originalCategorySelect");
-        if (categorySelect) {
-          categorySelect.innerHTML = '<option value="">カテゴリを選択してください</option>';
-          data.originalCategories.forEach(category => {
-            const opt = document.createElement("option");
-            opt.value = category; opt.textContent = category;
-            categorySelect.appendChild(opt);
-          });
-        }
-      } catch(error) {
-        console.error(error);
-      }
-    };
-
-    function saveStudentId() {
-      localStorage.setItem("studentId", document.getElementById("studentId").value);
-    }
-
-    function setScriptMode(mode) {
-      currentMode = mode;
-      document.getElementById('boxOriginal').classList.toggle('active', mode === 'original');
-      document.getElementById('boxTeacher').classList.toggle('active', mode === 'teacher');
-    }
-
-    function onTaskChange() {
-      if(currentMode === 'teacher') {
-        document.getElementById('sentence').value = document.getElementById('taskSelect').value;
-      }
-    }
-
-    // ==========================================
-    // ② 自動チャンク区切り ＆ 画像読み取り(OCR)
-    // ==========================================
-    function applyAutoChunking() {
-      let text = document.getElementById('sentence').value;
-      if (!text) return alert("英文が入力されていません。");
-      text = text.replace(/([,?!])\s+/g, '$1 / ');
-      document.getElementById('sentence').value = text;
-    }
-
-    async function processImage(input) {
-      if (!input.files || input.files.length === 0) return;
-      document.getElementById('modeRadioOriginal').checked = true;
-      setScriptMode('original');
-      const status = document.getElementById('ocrStatus');
-      status.innerText = "⏳ 画像読み取り中...少々お待ちください";
-      try {
-        const result = await Tesseract.recognize(input.files[0], 'eng');
-        document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
-        status.innerText = "✅ 読み取り完了！";
-      } catch(err) {
-        status.innerText = "❌ エラーが発生しました";
-      }
-    }
-
-    // ==========================================
-    // ③ 音声再生（お手本） API
-    // ==========================================
-    let synth = window.speechSynthesis;
-    function playFullAudio() {
-      stopAudio();
-      let text = document.getElementById('sentence').value.replace(/\//g, '');
-      if(!text) return alert("英文を入力してください");
-      let utterThis = new SpeechSynthesisUtterance(text);
-      utterThis.lang = 'en-US';
-      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
-      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
-      document.getElementById('btnAudioStop').disabled = false;
-      synth.speak(utterThis);
-    }
-    function stopAudio() {
-      synth.cancel();
-      document.getElementById('btnAudioStop').disabled = true;
-    }
-
-    // ==========================================
-    // ④ 音声認識 ＆ 評価システム
-    // ==========================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    if(recognition) {
-      recognition.lang = 'en-US';
-      recognition.continuous = true;
-    }
-    let startTime = 0;
-
-    function startFullRecognition() {
-      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
-      const sid = document.getElementById('studentId').value;
-      if(sid.length !== 4) return alert("生徒IDを4桁で入力してください。");
-      
-      document.getElementById('resultArea').style.display = 'none';
-      document.getElementById('btnRecStart').disabled = true;
-      document.getElementById('btnRecStop').disabled = false;
-      document.getElementById('recStatus').innerText = "🔴 録音中... (話し終わったら「録音終了」を押してください)";
-      
-      startTime = Date.now();
-      recognition.start();
-    }
-
-    function stopFullRecognition() {
-      document.getElementById('btnRecStart').disabled = false;
-      document.getElementById('btnRecStop').disabled = true;
-      document.getElementById('recStatus').innerText = "⏳ 録音データを解析中...";
-      recognition.stop();
-    }
-
-    if(recognition) {
-      recognition.onresult = function(event) {
-        let durationMin = (Date.now() - startTime) / 1000 / 60;
-        let spokenText = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          spokenText += event.results[i][0].transcript + " ";
-        }
-        analyzeAndSend(spokenText.trim(), Math.max(durationMin, 0.01));
-      };
-    }
-
-    function analyzeAndSend(spokenText, durationMin) {
-      const originalText = document.getElementById('sentence').value;
-      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
-      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
-      
-      // WPM計算
-      const wpm = Math.round(cleanSpoken.length / durationMin);
-      let wpmBadge = "badge-target", wpmText = "目標スピード";
-      if(wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
-      if(wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
-
-      // スコア計算と色分け表示
-      let matchCount = 0;
-      let weakWords = [];
-      let renderedChunks = "";
-      
-      const chunks = originalText.split('/');
-      chunks.forEach((chunk, index) => {
-        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
-        if(words.length === 0) return;
-        if(index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
-        
-        words.forEach(w => {
-          if(cleanSpoken.includes(w.toLowerCase())) {
-            matchCount++;
-            renderedChunks += `<span class="word word-perfect">${w}</span>`;
-          } else {
-            weakWords.push(w);
-            renderedChunks += `<span class="word word-again">${w}</span>`;
-          }
-        });
-      });
-
-      const score = cleanOriginal.length > 0 ? Math.round((matchCount / cleanOriginal.length) * 100) : 0;
-
-      // 結果を画面に表示
-      document.getElementById('resultContent').innerHTML = `
-        <div class="metric-card"><div class="metric-label">伝わる度スコア</div><div class="metric-value">${score}<span class="metric-unit">点</span></div></div>
-        <div class="metric-card"><div class="metric-label">スピード (WPM)</div><div class="metric-value">${wpm}<span class="metric-unit">語/分</span></div><div class="wpm-badge ${wpmBadge}">${wpmText}</div></div>
-      `;
-      document.getElementById('chunkResultArea').innerHTML = `
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background: var(--color-perfect)"></div>伝わった単語</div>
-          <div class="legend-item"><div class="legend-dot" style="background: var(--color-again)"></div>惜しい・要練習</div>
-        </div>
-        <div style="line-height: 2;">${renderedChunks}</div>
-      `;
-      document.getElementById('resultArea').style.display = 'block';
-      document.getElementById('recStatus').innerText = "✅ 解析完了！結果が表示されました。";
-
-      // GASへデータ送信
-      const sid = document.getElementById('studentId').value;
-      let tName = currentMode === 'teacher' ? document.getElementById('taskSelect').options[document.getElementById('taskSelect').selectedIndex]?.text : document.getElementById('originalCategorySelect').value;
-      
-      fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          studentId: sid,
-          mode: currentMode === 'teacher' ? '配信課題' : 'オリジナル',
-          taskName: tName || "未設定",
-          originalText: originalText,
-          spokenText: spokenText,
-          score: score,
-          weakWords: weakWords.slice(0, 5) // 苦手単語は上位5個まで保存
-        })
-      }).catch(err => console.error(err));
-    }
-  </script>
-</body>
-</html>
+    <div id="chunkResultArea" style="margin
