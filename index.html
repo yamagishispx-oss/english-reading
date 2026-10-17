@@ -78,7 +78,6 @@
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
     .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
     
-    /* 苦手単語練習用スタイル */
     .weak-practice-box {
       background: #fff1f2;
       border: 1px solid #fecdd3;
@@ -210,8 +209,6 @@
     </div>
     <div id="resultContent" class="metrics-grid"></div>
     <div id="chunkResultArea" style="margin-top: 16px;"></div>
-    
-    <!-- 苦手単語集中練習セクション -->
     <div id="weakWordsPracticeArea"></div>
   </div>
 
@@ -272,31 +269,25 @@
     }
 
     // ==========================================
-    // ② 自動チャンク区切り（機能強化版） ＆ OCR
+    // ② 自動チャンク区切り ＆ OCR
     // ==========================================
     function applyAutoChunking() {
       let text = document.getElementById('sentence').value;
       if (!text) return alert("英文が入力されていません。");
 
-      // 既存の区切りをリセットして整形
       text = text.replace(/\s*\/\s*/g, ' ');
-
-      // 1. カンマ、ピリオド、疑問符、感嘆符、コロン、セミコロンの後で区切る
       text = text.replace(/([,;:?!.])\s+/g, '$1 / ');
 
-      // 2. 前置詞・接続詞・関係詞の前に / を自動挿入
       const keywords = [
         "in", "on", "at", "to", "for", "with", "by", "from", "of", "about", "into", "through", "during", "before", "after",
-        "because", "when", "if", "and", "but", "or", "so", "which", "who", "that", "where", "while", "sandbox", "although"
+        "because", "when", "if", "and", "but", "or", "so", "which", "who", "that", "where", "while", "although"
       ];
 
       keywords.forEach(kw => {
-        // 先頭や文頭でない位置にある指定キーワードの直前に / を挿入
         const regex = new RegExp(`(?<=\\s)(${kw})(?=\\s+)`, "gi");
         text = text.replace(regex, "/ $1");
       });
 
-      // 余分なスペースと連続スラッシュの調整
       text = text.replace(/\/\s*\//g, '/').replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
       document.getElementById('sentence').value = text;
     }
@@ -336,7 +327,6 @@
       document.getElementById('btnAudioStop').disabled = true;
     }
 
-    // 単語単体のお手本再生
     function playSingleWord(word) {
       synth.cancel();
       let utterThis = new SpeechSynthesisUtterance(word);
@@ -346,15 +336,60 @@
     }
 
     // ==========================================
-    // ④ 音声認識 ＆ 発音厳格化スコア計算システム
+    // ④ 音声認識 ＆ 発音厳格化スコア計算システム（不具合修正版）
     // ==========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    let startTime = 0;
+    let accumulatedText = "";
+    let accumulatedConfidence = [];
+    let isRecording = false;
+
     if(recognition) {
       recognition.lang = 'en-US';
       recognition.continuous = true;
+      recognition.interimResults = false;
+
+      // 音声が認識されるたびに結果を安全に蓄積
+      recognition.onresult = function(event) {
+        accumulatedText = "";
+        accumulatedConfidence = [];
+        for (let i = 0; i < event.results.length; i++) {
+          accumulatedText += event.results[i][0].transcript + " ";
+          if (event.results[i][0].confidence) {
+            accumulatedConfidence.push(event.results[i][0].confidence);
+          }
+        }
+      };
+
+      // マイク未許可などのエラーハンドリング
+      recognition.onerror = function(event) {
+        console.error("音声認識エラー:", event.error);
+        if(event.error === 'not-allowed') {
+          alert("マイクの使用が許可されていません。ブラウザのマイク設定をご確認ください。");
+        }
+      };
+
+      // ★【重要】録音停止（onend）時に確実に評価分析を起動
+      recognition.onend = function() {
+        if (!isRecording) return;
+        isRecording = false;
+        
+        let durationMin = (Date.now() - startTime) / 1000 / 60;
+        let avgConfidence = 0.85;
+        if (accumulatedConfidence.length > 0) {
+          avgConfidence = accumulatedConfidence.reduce((a, b) => a + b, 0) / accumulatedConfidence.length;
+        }
+
+        // 音声が拾えなかった場合の判定
+        if (!accumulatedText.trim()) {
+          alert("音声が認識できませんでした。マイクの許可を確認し、もう一度はっきりと発音してください。");
+          return;
+        }
+
+        analyzeAndSend(accumulatedText.trim(), Math.max(durationMin, 0.01), avgConfidence);
+      };
     }
-    let startTime = 0;
 
     function startFullRecognition() {
       if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
@@ -365,34 +400,24 @@
       document.getElementById('btnRecStart').disabled = true;
       document.getElementById('btnRecStop').disabled = false;
       
+      accumulatedText = "";
+      accumulatedConfidence = [];
+      isRecording = true;
       startTime = Date.now();
-      recognition.start();
+      
+      try {
+        recognition.start();
+      } catch(e) {
+        console.error(e);
+      }
     }
 
     function stopFullRecognition() {
       document.getElementById('btnRecStart').disabled = false;
       document.getElementById('btnRecStop').disabled = true;
-      recognition.stop();
-    }
-
-    if(recognition) {
-      recognition.onresult = function(event) {
-        let durationMin = (Date.now() - startTime) / 1000 / 60;
-        let spokenText = "";
-        let totalConfidence = 0;
-        let resultCount = 0;
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          spokenText += event.results[i][0].transcript + " ";
-          if (event.results[i][0].confidence) {
-            totalConfidence += event.results[i][0].confidence;
-            resultCount++;
-          }
-        }
-
-        let avgConfidence = resultCount > 0 ? (totalConfidence / resultCount) : 0.85;
-        analyzeAndSend(spokenText.trim(), Math.max(durationMin, 0.01), avgConfidence);
-      };
+      if(recognition && isRecording) {
+        recognition.stop();
+      }
     }
 
     function analyzeAndSend(spokenText, durationMin, confidence) {
@@ -406,7 +431,7 @@
       if(wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
       if(wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
 
-      // 語順チェック
+      // 語順厳格チェック
       let matchCount = 0;
       let rawWeakWords = [];
       let renderedChunks = "";
@@ -528,7 +553,6 @@
       container.innerHTML = html;
     }
 
-    // 苦手単語1語の単音発音チェック
     function testSingleWord(targetWord, btnId) {
       if (!SpeechRecognition) return alert("お使いのブラウザは音声認識に対応していません。");
       
@@ -571,7 +595,6 @@
       };
     }
 
-    // 苦手単語だけを原稿エリアにセットして再練習する
     function setWeakWordsToSentence(weakWordsArray) {
       if (weakWordsArray.length === 0) return;
       document.getElementById('sentence').value = weakWordsArray.join(' / ');
