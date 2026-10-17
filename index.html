@@ -118,15 +118,6 @@
       margin: 0;
       border-radius: 6px;
     }
-    .reload-btn {
-      font-size: 11px;
-      padding: 2px 6px;
-      margin-left: 6px;
-      background: #e2e8f0;
-      color: #475569;
-      border-radius: 4px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -153,7 +144,7 @@
           <label for="modeRadioOriginal" style="cursor: pointer;">① オリジナル原稿を使う</label>
         </div>
         <div style="margin-bottom: 8px;">
-          <label>授業名・単元名: <span class="reload-btn" onclick="loadGasData()">🔄 再読み込み</span></label>
+          <label>授業名・単元名:</label>
           <select id="originalCategorySelect">
             <option value="">データ読み込み中...</option>
           </select>
@@ -161,4 +152,453 @@
         <div>
           <label>画像から文字読み込み (OCR):</label>
           <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px; font-size:12px;">
-          <div id="ocrStatus" style="font-weight:600; color:var(--primary); font-size:12.5px; margin-top:4px;">
+          <div id="ocrStatus" style="font-weight:600; color:var(--primary); font-size:12.5px; margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <!-- 右：配信課題 -->
+      <div class="script-box active" id="boxTeacher">
+        <div class="script-box-title">
+          <input type="radio" id="modeRadioTeacher" name="modeRadio" value="teacher" checked onchange="setScriptMode('teacher')">
+          <label for="modeRadioTeacher" style="cursor: pointer;">② 配信課題を使う</label>
+        </div>
+        <div>
+          <label>課題を選択:</label>
+          <select id="taskSelect" onchange="onTaskChange()">
+            <option value="">データ読み込み中...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div>
+      <label>英文の確認・編集（ / で区切り位置を指定可能）:</label>
+      <textarea id="sentence" placeholder="選択された英文または入力した英文がここに表示されます..."></textarea>
+    </div>
+  </div>
+  
+  <div class="grid-2col">
+    <div class="card" style="margin-bottom: 0;">
+      <h2>音声再生（お手本）</h2>
+      <div style="margin-bottom: 8px;">
+        <label>速度: </label>
+        <select id="speechRate" style="width: auto; display: inline-block; padding: 4px 8px;" onchange="stopAudio()">
+          <option value="0.7">ゆっくり (0.7x)</option>
+          <option value="0.9" selected>標準 (0.9x / 約110 WPM)</option>
+          <option value="1.1">速め (1.1x / 約130 WPM)</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn-primary" id="btnAudioPlay" onclick="playFullAudio()">再生</button>
+        <button class="btn-sub" id="btnAudioStop" onclick="stopAudio()" disabled>停止</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom: 0;">
+      <h2>音読録音</h2>
+      <div>
+        <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
+        <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
+    <h2>評価結果分析</h2>
+    <div class="wpm-info-box">
+      ⚡ <strong>WPM（Words Per Minute）とは？</strong><br>
+      1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力に直結します！
+    </div>
+    <div id="resultContent" class="metrics-grid"></div>
+    <div id="chunkResultArea" style="margin-top: 16px;"></div>
+    <div id="weakWordsPracticeArea"></div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ① 全体設定とデータ読み込み
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
+    let currentMode = 'teacher';
+
+    window.onload = async function() {
+      const savedId = localStorage.getItem("studentId");
+      if(savedId) document.getElementById("studentId").value = savedId;
+
+      const taskSelect = document.getElementById("taskSelect");
+      const categorySelect = document.getElementById("originalCategorySelect");
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        if (!response.ok) throw new Error("HTTP Error " + response.status);
+        const data = await response.json();
+        
+        if (taskSelect && data.teacherTasks) {
+          taskSelect.innerHTML = '<option value="">課題を選択してください</option>';
+          data.teacherTasks.forEach(task => {
+            const opt = document.createElement("option");
+            opt.value = task.text; 
+            opt.textContent = task.title;
+            taskSelect.appendChild(opt);
+          });
+        }
+        if (categorySelect && data.originalCategories) {
+          categorySelect.innerHTML = '<option value="">カテゴリを選択してください</option>';
+          data.originalCategories.forEach(category => {
+            const opt = document.createElement("option");
+            opt.value = category; 
+            opt.textContent = category;
+            categorySelect.appendChild(opt);
+          });
+        }
+      } catch(error) {
+        console.error("データ読み込みエラー:", error);
+        if (taskSelect) taskSelect.innerHTML = '<option value="">(課題を手入力または選択できます)</option>';
+        if (categorySelect) categorySelect.innerHTML = '<option value="">(カテゴリを選択)</option>';
+      }
+    };
+
+    function saveStudentId() {
+      localStorage.setItem("studentId", document.getElementById("studentId").value);
+    }
+
+    function setScriptMode(mode) {
+      currentMode = mode;
+      document.getElementById('boxOriginal').classList.toggle('active', mode === 'original');
+      document.getElementById('boxTeacher').classList.toggle('active', mode === 'teacher');
+    }
+
+    function onTaskChange() {
+      if(currentMode === 'teacher') {
+        document.getElementById('sentence').value = document.getElementById('taskSelect').value;
+      }
+    }
+
+    // ==========================================
+    // ② 自動チャンク区切り ＆ OCR
+    // ==========================================
+    function applyAutoChunking() {
+      let text = document.getElementById('sentence').value;
+      if (!text) return alert("英文が入力されていません。");
+
+      text = text.replace(/\s*\/\s*/g, ' ');
+      text = text.replace(/([,;:?!.])\s+/g, '$1 / ');
+
+      const keywords = [
+        "in", "on", "at", "to", "for", "with", "by", "from", "of", "about", "into", "through", "during", "before", "after",
+        "because", "when", "if", "and", "but", "or", "so", "which", "who", "that", "where", "while", "although"
+      ];
+
+      keywords.forEach(function(kw) {
+        const regex = new RegExp("\\s+(" + kw + ")\\s+", "gi");
+        text = text.replace(regex, " / $1 ");
+      });
+
+      text = text.replace(/\/\s*\//g, '/').replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
+      document.getElementById('sentence').value = text;
+    }
+
+    async function processImage(input) {
+      if (!input.files || input.files.length === 0) return;
+      document.getElementById('modeRadioOriginal').checked = true;
+      setScriptMode('original');
+      const status = document.getElementById('ocrStatus');
+      status.innerText = "⏳ 画像読み取り中...少々お待ちください";
+      try {
+        const result = await Tesseract.recognize(input.files[0], 'eng');
+        document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
+        status.innerText = "✅ 読み取り完了！";
+      } catch(err) {
+        status.innerText = "❌ エラーが発生しました";
+      }
+    }
+
+    // ==========================================
+    // ③ 音声再生（お手本） API
+    // ==========================================
+    let synth = window.speechSynthesis;
+    function playFullAudio() {
+      stopAudio();
+      let text = document.getElementById('sentence').value.replace(/\//g, '');
+      if(!text) return alert("英文を入力してください");
+      let utterThis = new SpeechSynthesisUtterance(text);
+      utterThis.lang = 'en-US';
+      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
+      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
+      document.getElementById('btnAudioStop').disabled = false;
+      synth.speak(utterThis);
+    }
+    function stopAudio() {
+      if(synth) synth.cancel();
+      document.getElementById('btnAudioStop').disabled = true;
+    }
+
+    function playSingleWord(word) {
+      if(synth) synth.cancel();
+      let utterThis = new SpeechSynthesisUtterance(word);
+      utterThis.lang = 'en-US';
+      utterThis.rate = 0.8;
+      synth.speak(utterThis);
+    }
+
+    // ==========================================
+    // ④ 音声認識 ＆ 安定型スコアリングシステム
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    let startTime = 0;
+    let accumulatedText = "";
+    let accumulatedConfidence = [];
+    let isRecording = false;
+
+    if(recognition) {
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = function(event) {
+        accumulatedText = "";
+        accumulatedConfidence = [];
+        for (let i = 0; i < event.results.length; i++) {
+          accumulatedText += event.results[i][0].transcript + " ";
+          if (event.results[i][0].confidence) {
+            accumulatedConfidence.push(event.results[i][0].confidence);
+          }
+        }
+      };
+
+      recognition.onerror = function(event) {
+        console.error("音声認識エラー:", event.error);
+        if(event.error === 'not-allowed') {
+          alert("マイクの使用が許可されていません。ブラウザのマイク設定をご確認ください。");
+        }
+      };
+
+      recognition.onend = function() {
+        if (!isRecording) return;
+        isRecording = false;
+        
+        let durationMin = (Date.now() - startTime) / 1000 / 60;
+        let avgConfidence = 0.85;
+        if (accumulatedConfidence.length > 0) {
+          avgConfidence = accumulatedConfidence.reduce((a, b) => a + b, 0) / accumulatedConfidence.length;
+        }
+
+        if (!accumulatedText.trim()) {
+          alert("音声が認識できませんでした。マイクの許可を確認し、もう一度はっきりと発音してください。");
+          return;
+        }
+
+        analyzeAndSend(accumulatedText.trim(), Math.max(durationMin, 0.01), avgConfidence);
+      };
+    }
+
+    function startFullRecognition() {
+      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
+      const sid = document.getElementById('studentId').value;
+      if(sid.length !== 4) return alert("生徒IDを半角数字4桁で入力してください。");
+      
+      document.getElementById('resultArea').style.display = 'none';
+      document.getElementById('btnRecStart').disabled = true;
+      document.getElementById('btnRecStop').disabled = false;
+      
+      accumulatedText = "";
+      accumulatedConfidence = [];
+      isRecording = true;
+      startTime = Date.now();
+      
+      try {
+        recognition.start();
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function stopFullRecognition() {
+      document.getElementById('btnRecStart').disabled = false;
+      document.getElementById('btnRecStop').disabled = true;
+      if(recognition && isRecording) {
+        recognition.stop();
+      }
+    }
+
+   function analyzeAndSend(spokenText, durationMin, confidence) {
+      const originalText = document.getElementById('sentence').value;
+      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      
+      const totalWords = cleanOriginal.length;
+      if (totalWords === 0) return;
+
+      // 語順を考慮した単語一致チェック
+      let matchCount = 0;
+      let rawWeakWords = [];
+      let renderedChunks = "";
+      let searchStartIndex = 0;
+
+      const chunks = originalText.split('/');
+      chunks.forEach((chunk, index) => {
+        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
+        if (words.length === 0) return;
+        if (index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
+
+        words.forEach(w => {
+          const lowerW = w.toLowerCase();
+          const foundIndex = cleanSpoken.indexOf(lowerW, searchStartIndex);
+
+          if (foundIndex !== -1) {
+            matchCount++;
+            searchStartIndex = foundIndex + 1;
+            renderedChunks += `<span class="word word-perfect">${w}</span>`;
+          } else {
+            rawWeakWords.push(w);
+            renderedChunks += `<span class="word word-again">${w}</span>`;
+          }
+        });
+      });
+
+      // ★ 発音明瞭度を直接スコアに反映（一致率 × 明瞭度）
+      const wordMatchRate = matchCount / totalWords; // 1.0 (100%)
+      const confidencePercent = Math.round(confidence * 100); // 例: 96%
+      const finalScore = Math.min(100, Math.max(0, Math.round(wordMatchRate * confidencePercent)));
+
+      // WPM（読書スピード）計算
+      const wpm = Math.round(cleanSpoken.length / durationMin);
+      let wpmBadge = "badge-target", wpmText = "目標スピード";
+      if (wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
+      if (wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
+
+      // 画面表示の更新（発音明瞭度＝メインスコア）
+      document.getElementById('resultContent').innerHTML = `
+        <div class="metric-card">
+          <div class="metric-label">発音・伝わる度スコア</div>
+          <div class="metric-value">${finalScore}<span class="metric-unit">点 / 100</span></div>
+          <div style="font-size:10.5px; color:#64748b; margin-top:3px; font-weight:600;">発音明瞭度: ${confidencePercent}%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">スピード (WPM)</div>
+          <div class="metric-value">${wpm}<span class="metric-unit">語/分</span></div>
+          <div class="wpm-badge ${wpmBadge}">${wpmText}</div>
+        </div>
+      `;
+
+      document.getElementById('chunkResultArea').innerHTML = `
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-perfect)"></div>伝わった単語</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-again)"></div>惜しい・要練習</div>
+        </div>
+        <div style="line-height: 2;">${renderedChunks}</div>
+      `;
+
+      // 苦手単語トレーニングUI生成
+      const uniqueWeakWords = [...new Set(rawWeakWords.map(w => w.replace(/[.,?!]/g, '').toLowerCase()))];
+      renderWeakWordsPractice(uniqueWeakWords);
+
+      document.getElementById('resultArea').style.display = 'block';
+
+      // GASスプレッドシートへ自動送信
+      const sid = document.getElementById('studentId').value;
+      let tName = currentMode === 'teacher' 
+        ? document.getElementById('taskSelect').options[document.getElementById('taskSelect').selectedIndex]?.text 
+        : document.getElementById('originalCategorySelect').value;
+      
+      fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          studentId: sid,
+          mode: currentMode === 'teacher' ? '配信課題' : 'オリジナル',
+          taskName: tName || "未設定",
+          originalText: originalText,
+          spokenText: spokenText,
+          score: finalScore,
+          weakWords: uniqueWeakWords.slice(0, 5)
+        })
+      }).catch(err => console.error("送信エラー:", err));
+    }
+
+    // ==========================================
+    // ⑤ 苦手単語トレーニング システム
+    // ==========================================
+    function renderWeakWordsPractice(weakWords) {
+      const container = document.getElementById('weakWordsPracticeArea');
+      if (weakWords.length === 0) {
+        container.innerHTML = `
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-top: 16px; text-align: center; color: #15803d; font-weight: 700;">
+            🎉 素晴らしい！すべての単語が綺麗に伝わりました！
+          </div>`;
+        return;
+      }
+
+      let html = `
+        <div class="weak-practice-box">
+          <div class="weak-practice-title">
+            <span>🔥 苦手単語トレーニング (${weakWords.length}語)</span>
+            <button class="btn-sub btn-mini" onclick="setWeakWordsToSentence(['${weakWords.join("','")}'])">💡 苦手単語だけを原稿にセット</button>
+          </div>
+      `;
+
+      weakWords.forEach((word, idx) => {
+        html += `
+          <div class="weak-word-item">
+            <span class="weak-word-text">${word}</span>
+            <div class="weak-word-actions">
+              <button class="btn-sub btn-mini" onclick="playSingleWord('${word}')">🔊 お手本</button>
+              <button class="btn-primary btn-mini" id="btnTest_${idx}" onclick="testSingleWord('${word}', 'btnTest_${idx}')">🎙️ 発音チェック</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    function testSingleWord(targetWord, btnId) {
+      if (!SpeechRecognition) return alert("お使いのブラウザは音声認識に対応していません。");
+      
+      const singleRec = new SpeechRecognition();
+      singleRec.lang = 'en-US';
+      singleRec.continuous = false;
+      
+      const btnEl = document.getElementById(btnId);
+      btnEl.innerText = "🎙️ 発音してください...";
+      btnEl.disabled = true;
+      
+      singleRec.start();
+      
+      singleRec.onresult = function(event) {
+        const spoken = event.results[0][0].transcript.trim().toLowerCase().replace(/[.,?!]/g, '');
+        const target = targetWord.toLowerCase();
+        
+        if (spoken.includes(target) || target.includes(spoken)) {
+          btnEl.innerText = "🎉 PASS!";
+          btnEl.style.background = "#16a34a";
+          btnEl.style.color = "#ffffff";
+        } else {
+          btnEl.innerText = `❌ (${spoken}) もう一度`;
+          btnEl.style.background = "#dc2626";
+          btnEl.style.color = "#ffffff";
+          btnEl.disabled = false;
+        }
+      };
+
+      singleRec.onerror = function() {
+        btnEl.innerText = "❌ エラー";
+        btnEl.disabled = false;
+      };
+
+      singleRec.onend = function() {
+        if (btnEl.innerText.includes("発音してください")) {
+          btnEl.innerText = "❌ もう一度";
+          btnEl.disabled = false;
+        }
+      };
+    }
+
+    function setWeakWordsToSentence(weakWordsArray) {
+      if (weakWordsArray.length === 0) return;
+      document.getElementById('sentence').value = weakWordsArray.join(' / ');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
