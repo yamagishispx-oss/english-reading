@@ -75,3 +75,94 @@
     .word-near { background: var(--bg-near); color: var(--color-near); border: 1px solid #fde68a; }
     .word-again { background: var(--bg-again); color: var(--color-again); border: 1px solid #fecdd3; }
     .chunk-divider { color: #0284c7; font-weight: 800; margin: 0 4px; font-size: 18px; }
+    .legend { display: flex; gap: 12px; font-size: 11.5px; font-weight: 600; margin-bottom: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+    .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
+    
+    .weak-practice-box {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .weak-practice-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #991b1b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .weak-word-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #fda4af;
+      margin-bottom: 8px;
+    }
+    .weak-word-text {
+      font-weight: 800;
+      font-size: 16px;
+      color: #dc2626;
+    }
+    .weak-word-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-mini {
+      padding: 4px 10px;
+      font-size: 12px;
+      margin: 0;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-card">
+    <h1>英語音読トレーニング</h1>
+    <div class="sub-message">〜 相手に「伝わる英語」と「適正スピード」を目指そう！ 〜</div>
+  </div>
+
+  <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
+    <label for="studentId">生徒ID（半角4桁／入力必須）</label>
+    <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
+  </div>
+
+  <div class="card">
+    <h2>
+      <span>原稿の準備</span>
+      <button class="btn-auto-chunk" onclick="applyAutoChunking()">🪄 自動チャンク区切り</button>
+    </h2>
+    <div class="grid-2col">
+      <!-- 左：オリジナル原稿 -->
+      <div class="script-box" id="boxOriginal">
+        <div class="script-box-title">
+          <input type="radio" id="modeRadioOriginal" name="modeRadio" value="original" onchange="setScriptMode('original')">
+          <label for="modeRadioOriginal" style="cursor: pointer;">① オリジナル原稿を使う</label>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label>授業名・単元名:</label>
+          <select id="originalCategorySelect">
+            <option value="">データ読み込み中...</option>
+          </select>
+        </div>
+        <div>
+          <label>画像から文字読み込み (OCR):</label>
+          <input type="file" id="imageInput" accept="image/*" onchange="processImage(this)" style="margin-top:4px; font-size:12px;">
+          <div id="ocrStatus" style="font-weight:600; color:var(--primary); font-size:12.5px; margin-top:4px;"></div>
+        </div>
+      </div>
+      <!-- 右：配信課題 -->
+      <div class="script-box active" id="boxTeacher">
+        <div class="script-box-title">
+          <input type="radio" id="modeRadioTeacher" name="modeRadio" value="teacher" checked onchange="setScriptMode('teacher')">
+          <label for="modeRadioTeacher" style="cursor: pointer;">② 配信課題を使う</label>
+        </div>
+        <div>
+          <label>課題を選択:</label
