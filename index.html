@@ -77,6 +77,49 @@
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
     .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
+    
+    /* 苦手単語練習用スタイル */
+    .weak-practice-box {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 16px;
+    }
+    .weak-practice-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #991b1b;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .weak-word-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #fda4af;
+      margin-bottom: 8px;
+    }
+    .weak-word-text {
+      font-weight: 800;
+      font-size: 16px;
+      color: #dc2626;
+    }
+    .weak-word-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-mini {
+      padding: 4px 10px;
+      font-size: 12px;
+      margin: 0;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -156,7 +199,6 @@
         <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
         <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
       </div>
-      <p id="recStatus" style="color: var(--text-sub); font-size: 12.5px; margin-top: 8px; min-height:18px;"></p>
     </div>
   </div>
   
@@ -167,4 +209,374 @@
       1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力に直結します！
     </div>
     <div id="resultContent" class="metrics-grid"></div>
-    <div id="chunkResultArea" style="margin
+    <div id="chunkResultArea" style="margin-top: 16px;"></div>
+    
+    <!-- 苦手単語集中練習セクション -->
+    <div id="weakWordsPracticeArea"></div>
+  </div>
+
+  <script>
+    // ==========================================
+    // ① 全体設定とデータ読み込み
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
+    let currentMode = 'teacher';
+
+    window.onload = async function() {
+      const savedId = localStorage.getItem("studentId");
+      if(savedId) document.getElementById("studentId").value = savedId;
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        const data = await response.json();
+        
+        const taskSelect = document.getElementById("taskSelect");
+        if (taskSelect) {
+          taskSelect.innerHTML = '<option value="">課題を選択してください</option>';
+          data.teacherTasks.forEach(task => {
+            const opt = document.createElement("option");
+            opt.value = task.text; 
+            opt.textContent = task.title;
+            taskSelect.appendChild(opt);
+          });
+        }
+        const categorySelect = document.getElementById("originalCategorySelect");
+        if (categorySelect) {
+          categorySelect.innerHTML = '<option value="">カテゴリを選択してください</option>';
+          data.originalCategories.forEach(category => {
+            const opt = document.createElement("option");
+            opt.value = category; 
+            opt.textContent = category;
+            categorySelect.appendChild(opt);
+          });
+        }
+      } catch(error) {
+        console.error("データ読み込みエラー:", error);
+      }
+    };
+
+    function saveStudentId() {
+      localStorage.setItem("studentId", document.getElementById("studentId").value);
+    }
+
+    function setScriptMode(mode) {
+      currentMode = mode;
+      document.getElementById('boxOriginal').classList.toggle('active', mode === 'original');
+      document.getElementById('boxTeacher').classList.toggle('active', mode === 'teacher');
+    }
+
+    function onTaskChange() {
+      if(currentMode === 'teacher') {
+        document.getElementById('sentence').value = document.getElementById('taskSelect').value;
+      }
+    }
+
+    // ==========================================
+    // ② 自動チャンク区切り（機能強化版） ＆ OCR
+    // ==========================================
+    function applyAutoChunking() {
+      let text = document.getElementById('sentence').value;
+      if (!text) return alert("英文が入力されていません。");
+
+      // 既存の区切りをリセットして整形
+      text = text.replace(/\s*\/\s*/g, ' ');
+
+      // 1. カンマ、ピリオド、疑問符、感嘆符、コロン、セミコロンの後で区切る
+      text = text.replace(/([,;:?!.])\s+/g, '$1 / ');
+
+      // 2. 前置詞・接続詞・関係詞の前に / を自動挿入
+      const keywords = [
+        "in", "on", "at", "to", "for", "with", "by", "from", "of", "about", "into", "through", "during", "before", "after",
+        "because", "when", "if", "and", "but", "or", "so", "which", "who", "that", "where", "while", "sandbox", "although"
+      ];
+
+      keywords.forEach(kw => {
+        // 先頭や文頭でない位置にある指定キーワードの直前に / を挿入
+        const regex = new RegExp(`(?<=\\s)(${kw})(?=\\s+)`, "gi");
+        text = text.replace(regex, "/ $1");
+      });
+
+      // 余分なスペースと連続スラッシュの調整
+      text = text.replace(/\/\s*\//g, '/').replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
+      document.getElementById('sentence').value = text;
+    }
+
+    async function processImage(input) {
+      if (!input.files || input.files.length === 0) return;
+      document.getElementById('modeRadioOriginal').checked = true;
+      setScriptMode('original');
+      const status = document.getElementById('ocrStatus');
+      status.innerText = "⏳ 画像読み取り中...少々お待ちください";
+      try {
+        const result = await Tesseract.recognize(input.files[0], 'eng');
+        document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
+        status.innerText = "✅ 読み取り完了！";
+      } catch(err) {
+        status.innerText = "❌ エラーが発生しました";
+      }
+    }
+
+    // ==========================================
+    // ③ 音声再生（お手本） API
+    // ==========================================
+    let synth = window.speechSynthesis;
+    function playFullAudio() {
+      stopAudio();
+      let text = document.getElementById('sentence').value.replace(/\//g, '');
+      if(!text) return alert("英文を入力してください");
+      let utterThis = new SpeechSynthesisUtterance(text);
+      utterThis.lang = 'en-US';
+      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
+      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
+      document.getElementById('btnAudioStop').disabled = false;
+      synth.speak(utterThis);
+    }
+    function stopAudio() {
+      synth.cancel();
+      document.getElementById('btnAudioStop').disabled = true;
+    }
+
+    // 単語単体のお手本再生
+    function playSingleWord(word) {
+      synth.cancel();
+      let utterThis = new SpeechSynthesisUtterance(word);
+      utterThis.lang = 'en-US';
+      utterThis.rate = 0.8;
+      synth.speak(utterThis);
+    }
+
+    // ==========================================
+    // ④ 音声認識 ＆ 発音厳格化スコア計算システム
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    if(recognition) {
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+    }
+    let startTime = 0;
+
+    function startFullRecognition() {
+      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
+      const sid = document.getElementById('studentId').value;
+      if(sid.length !== 4) return alert("生徒IDを半角数字4桁で入力してください。");
+      
+      document.getElementById('resultArea').style.display = 'none';
+      document.getElementById('btnRecStart').disabled = true;
+      document.getElementById('btnRecStop').disabled = false;
+      
+      startTime = Date.now();
+      recognition.start();
+    }
+
+    function stopFullRecognition() {
+      document.getElementById('btnRecStart').disabled = false;
+      document.getElementById('btnRecStop').disabled = true;
+      recognition.stop();
+    }
+
+    if(recognition) {
+      recognition.onresult = function(event) {
+        let durationMin = (Date.now() - startTime) / 1000 / 60;
+        let spokenText = "";
+        let totalConfidence = 0;
+        let resultCount = 0;
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          spokenText += event.results[i][0].transcript + " ";
+          if (event.results[i][0].confidence) {
+            totalConfidence += event.results[i][0].confidence;
+            resultCount++;
+          }
+        }
+
+        let avgConfidence = resultCount > 0 ? (totalConfidence / resultCount) : 0.85;
+        analyzeAndSend(spokenText.trim(), Math.max(durationMin, 0.01), avgConfidence);
+      };
+    }
+
+    function analyzeAndSend(spokenText, durationMin, confidence) {
+      const originalText = document.getElementById('sentence').value;
+      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      
+      // WPM（速さ）
+      const wpm = Math.round(cleanSpoken.length / durationMin);
+      let wpmBadge = "badge-target", wpmText = "目標スピード";
+      if(wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
+      if(wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
+
+      // 語順チェック
+      let matchCount = 0;
+      let rawWeakWords = [];
+      let renderedChunks = "";
+      let searchStartIndex = 0; 
+      
+      const chunks = originalText.split('/');
+      chunks.forEach((chunk, index) => {
+        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
+        if(words.length === 0) return;
+        if(index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
+        
+        words.forEach(w => {
+          const lowerW = w.toLowerCase();
+          const foundIndex = cleanSpoken.indexOf(lowerW, searchStartIndex);
+
+          if(foundIndex !== -1) {
+            matchCount++;
+            searchStartIndex = foundIndex + 1;
+            renderedChunks += `<span class="word word-perfect">${w}</span>`;
+          } else {
+            rawWeakWords.push(w);
+            renderedChunks += `<span class="word word-again">${w}</span>`;
+          }
+        });
+      });
+
+      // スコア計算
+      let rawScore = cleanOriginal.length > 0 ? (matchCount / cleanOriginal.length) * 100 : 0;
+      let strictScore = rawScore;
+      if (confidence < 0.85) {
+        strictScore = Math.round(rawScore * confidence);
+      } else {
+        strictScore = Math.round(rawScore);
+      }
+
+      // 結果表示
+      document.getElementById('resultContent').innerHTML = `
+        <div class="metric-card">
+          <div class="metric-label">伝わる度スコア</div>
+          <div class="metric-value">${strictScore}<span class="metric-unit">点</span></div>
+          <div style="font-size:10.5px; color:#64748b; margin-top:3px; font-weight:600;">発音明瞭度: ${Math.round(confidence * 100)}%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">スピード (WPM)</div>
+          <div class="metric-value">${wpm}<span class="metric-unit">語/分</span></div>
+          <div class="wpm-badge ${wpmBadge}">${wpmText}</div>
+        </div>
+      `;
+
+      document.getElementById('chunkResultArea').innerHTML = `
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-perfect)"></div>伝わった単語</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--color-again)"></div>惜しい・要練習</div>
+        </div>
+        <div style="line-height: 2;">${renderedChunks}</div>
+      `;
+
+      // 苦手単語トレーニングUIの生成
+      const uniqueWeakWords = [...new Set(rawWeakWords.map(w => w.replace(/[.,?!]/g, '').toLowerCase()))];
+      renderWeakWordsPractice(uniqueWeakWords);
+
+      document.getElementById('resultArea').style.display = 'block';
+
+      // GASへのデータ送信
+      const sid = document.getElementById('studentId').value;
+      let tName = currentMode === 'teacher' 
+        ? document.getElementById('taskSelect').options[document.getElementById('taskSelect').selectedIndex]?.text 
+        : document.getElementById('originalCategorySelect').value;
+      
+      fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          studentId: sid,
+          mode: currentMode === 'teacher' ? '配信課題' : 'オリジナル',
+          taskName: tName || "未設定",
+          originalText: originalText,
+          spokenText: spokenText,
+          score: strictScore,
+          weakWords: uniqueWeakWords.slice(0, 5)
+        })
+      }).catch(err => console.error("送信エラー:", err));
+    }
+
+    // ==========================================
+    // ⑤ 苦手単語トレーニング システム
+    // ==========================================
+    function renderWeakWordsPractice(weakWords) {
+      const container = document.getElementById('weakWordsPracticeArea');
+      if (weakWords.length === 0) {
+        container.innerHTML = `
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-top: 16px; text-align: center; color: #15803d; font-weight: 700;">
+            🎉 素晴らしい！全ての単語が綺麗に伝わりました！
+          </div>`;
+        return;
+      }
+
+      let html = `
+        <div class="weak-practice-box">
+          <div class="weak-practice-title">
+            <span>🔥 苦手単語トレーニング (${weakWords.length}語)</span>
+            <button class="btn-sub btn-mini" onclick="setWeakWordsToSentence(['${weakWords.join("','")}'])">💡 苦手単語だけを原稿にセット</button>
+          </div>
+      `;
+
+      weakWords.forEach((word, idx) => {
+        html += `
+          <div class="weak-word-item">
+            <span class="weak-word-text">${word}</span>
+            <div class="weak-word-actions">
+              <button class="btn-sub btn-mini" onclick="playSingleWord('${word}')">🔊 お手本</button>
+              <button class="btn-primary btn-mini" id="btnTest_${idx}" onclick="testSingleWord('${word}', 'btnTest_${idx}')">🎙️ 発音チェック</button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    // 苦手単語1語の単音発音チェック
+    function testSingleWord(targetWord, btnId) {
+      if (!SpeechRecognition) return alert("お使いのブラウザは音声認識に対応していません。");
+      
+      const singleRec = new SpeechRecognition();
+      singleRec.lang = 'en-US';
+      singleRec.continuous = false;
+      
+      const btnEl = document.getElementById(btnId);
+      btnEl.innerText = "🎙️ 発音してください...";
+      btnEl.disabled = true;
+      
+      singleRec.start();
+      
+      singleRec.onresult = function(event) {
+        const spoken = event.results[0][0].transcript.trim().toLowerCase().replace(/[.,?!]/g, '');
+        const target = targetWord.toLowerCase();
+        
+        if (spoken.includes(target) || target.includes(spoken)) {
+          btnEl.innerText = "🎉 PASS!";
+          btnEl.style.background = "#16a34a";
+          btnEl.style.color = "#ffffff";
+        } else {
+          btnEl.innerText = `❌ (${spoken}) もう一度`;
+          btnEl.style.background = "#dc2626";
+          btnEl.style.color = "#ffffff";
+          btnEl.disabled = false;
+        }
+      };
+
+      singleRec.onerror = function() {
+        btnEl.innerText = "❌ エラー";
+        btnEl.disabled = false;
+      };
+
+      singleRec.onend = function() {
+        if (btnEl.innerText.includes("発音してください")) {
+          btnEl.innerText = "❌ もう一度";
+          btnEl.disabled = false;
+        }
+      };
+    }
+
+    // 苦手単語だけを原稿エリアにセットして再練習する
+    function setWeakWordsToSentence(weakWordsArray) {
+      if (weakWordsArray.length === 0) return;
+      document.getElementById('sentence').value = weakWordsArray.join(' / ');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
