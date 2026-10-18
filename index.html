@@ -77,7 +77,6 @@
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
     .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
     
-    /* 録音波形表示エリア */
     #visualizer {
       width: 100%;
       height: 50px;
@@ -87,7 +86,6 @@
       display: none;
     }
 
-    /* 自分の音声再生ボックス */
     .self-audio-box {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
@@ -243,7 +241,6 @@
         <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
         <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
       </div>
-      <!-- 音声波形表示用 Canvas -->
       <canvas id="visualizer"></canvas>
     </div>
   </div>
@@ -251,7 +248,6 @@
   <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
     <h2>評価結果分析</h2>
     
-    <!-- 自分の録音音声再生エリア -->
     <div class="self-audio-box" id="selfAudioContainer" style="display: none;">
       <div class="self-audio-title">🎙️ 自分の録音を聞いてセルフチェック</div>
       <audio id="selfAudioPlayer" controls style="height: 36px; max-width: 300px;"></audio>
@@ -272,16 +268,27 @@
     // ==========================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
     let currentMode = 'teacher';
-    window.onload = async function() {
+
+    // ページのロード完了を安全に待機して実行
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", loadInitialData);
+    } else {
+      loadInitialData();
+    }
+
+    async function loadInitialData() {
       const savedId = localStorage.getItem("studentId");
-      if(savedId) document.getElementById("studentId").value = savedId;
+      if(savedId && document.getElementById("studentId")) {
+        document.getElementById("studentId").value = savedId;
+      }
       const taskSelect = document.getElementById("taskSelect");
       const categorySelect = document.getElementById("originalCategorySelect");
+
       try {
         const response = await fetch(GAS_WEB_APP_URL);
-        if (!response.ok) throw new Error("HTTP Error " + response.status);
+        if (!response.ok) throw new Error("HTTP ステータスエラー: " + response.status);
         const data = await response.json();
-        
+
         if (taskSelect && data.teacherTasks) {
           taskSelect.innerHTML = '<option value="">課題を選択してください</option>';
           data.teacherTasks.forEach(task => {
@@ -291,6 +298,7 @@
             taskSelect.appendChild(opt);
           });
         }
+
         if (categorySelect && data.originalCategories) {
           categorySelect.innerHTML = '<option value="">カテゴリを選択してください</option>';
           data.originalCategories.forEach(category => {
@@ -305,7 +313,8 @@
         if (taskSelect) taskSelect.innerHTML = '<option value="">(課題を手入力または選択できます)</option>';
         if (categorySelect) categorySelect.innerHTML = '<option value="">(カテゴリを選択)</option>';
       }
-    };
+    }
+
     function saveStudentId() {
       localStorage.setItem("studentId", document.getElementById("studentId").value);
     }
@@ -339,6 +348,7 @@
       text = text.replace(/\/\s*\//g, '/').replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
       document.getElementById('sentence').value = text;
     }
+
     async function processImage(input) {
       if (!input.files || input.files.length === 0) return;
       document.getElementById('modeRadioOriginal').checked = true;
@@ -348,4 +358,219 @@
       try {
         const result = await Tesseract.recognize(input.files[0], 'eng');
         document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
-        status.innerText = "✅
+        status.innerText = "✅ 読み取り完了！";
+      } catch(err) {
+        status.innerText = "❌ エラーが発生しました";
+      }
+    }
+
+    // ==========================================
+    // ③ 音声再生（お手本） API
+    // ==========================================
+    let synth = window.speechSynthesis;
+    function playFullAudio() {
+      stopAudio();
+      let text = document.getElementById('sentence').value.replace(/\//g, '');
+      if(!text) return alert("英文を入力してください");
+      let utterThis = new SpeechSynthesisUtterance(text);
+      utterThis.lang = 'en-US';
+      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
+      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
+      document.getElementById('btnAudioStop').disabled = false;
+      synth.speak(utterThis);
+    }
+    function stopAudio() {
+      if(synth) synth.cancel();
+      document.getElementById('btnAudioStop').disabled = true;
+    }
+    function playSingleWord(word) {
+      if(synth) synth.cancel();
+      let utterThis = new SpeechSynthesisUtterance(word);
+      utterThis.lang = 'en-US';
+      utterThis.rate = 0.8;
+      synth.speak(utterThis);
+    }
+
+    // ==========================================
+    // ④ 音声認識 ＆ 音声録音（MediaRecorder） ＆ 波形ビジュアル
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    let startTime = 0;
+    let accumulatedText = "";
+    let accumulatedConfidence = [];
+    let isRecording = false;
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let audioCtx = null;
+    let analyser = null;
+    let animFrameId = null;
+    let micStream = null;
+
+    if(recognition) {
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.onresult = function(event) {
+        accumulatedText = "";
+        accumulatedConfidence = [];
+        for (let i = 0; i < event.results.length; i++) {
+          accumulatedText += event.results[i][0].transcript + " ";
+          if (event.results[i][0].confidence) {
+            accumulatedConfidence.push(event.results[i][0].confidence);
+          }
+        }
+      };
+      recognition.onerror = function(event) {
+        console.error("音声認識エラー:", event.error);
+        if(event.error === 'not-allowed') {
+          alert("マイクの使用が許可されていません。ブラウザのマイク設定をご確認ください。");
+        }
+      };
+      recognition.onend = function() {
+        if (!isRecording) return;
+        stopMediaRecorderAndVisualizer();
+        isRecording = false;
+        
+        let durationMin = (Date.now() - startTime) / 1000 / 60;
+        let avgConfidence = 0.85;
+        if (accumulatedConfidence.length > 0) {
+          avgConfidence = accumulatedConfidence.reduce((a, b) => a + b, 0) / accumulatedConfidence.length;
+        }
+        if (!accumulatedText.trim()) {
+          alert("音声が認識できませんでした。マイクの許可を確認し、もう一度はっきりと発音してください。");
+          return;
+        }
+        analyzeAndSend(accumulatedText.trim(), Math.max(durationMin, 0.01), avgConfidence);
+      };
+    }
+
+    function startVisualizer(stream) {
+      const canvas = document.getElementById('visualizer');
+      if (!canvas) return;
+      canvas.style.display = 'block';
+      const canvasCtx = canvas.getContext('2d');
+
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtxClass) return;
+      audioCtx = new AudioCtxClass();
+      analyser = audioCtx.createAnalyser();
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        animFrameId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        canvasCtx.fillStyle = '#0f172a';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const barWidth = (canvas.width / bufferLength) * 2.5;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * canvas.height;
+          canvasCtx.fillStyle = '#38bdf8';
+          canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 1;
+        }
+      }
+      draw();
+    }
+
+    function stopMediaRecorderAndVisualizer() {
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      const canvas = document.getElementById('visualizer');
+      if (canvas) canvas.style.display = 'none';
+
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+      }
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
+      }
+    }
+
+    async function startFullRecognition() {
+      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
+      const sid = document.getElementById('studentId').value;
+      if(sid.length !== 4) return alert("生徒IDを半角数字4桁で入力してください。");
+      
+      document.getElementById('resultArea').style.display = 'none';
+      document.getElementById('selfAudioContainer').style.display = 'none';
+      document.getElementById('btnRecStart').disabled = true;
+      document.getElementById('btnRecStop').disabled = false;
+      
+      accumulatedText = "";
+      accumulatedConfidence = [];
+      audioChunks = [];
+      isRecording = true;
+      startTime = Date.now();
+
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startVisualizer(micStream);
+
+        if (window.MediaRecorder) {
+          mediaRecorder = new MediaRecorder(micStream);
+          mediaRecorder.ondataavailable = e => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const player = document.getElementById('selfAudioPlayer');
+            player.src = audioUrl;
+            document.getElementById('selfAudioContainer').style.display = 'flex';
+          };
+          mediaRecorder.start();
+        }
+
+        if (recognition) recognition.start();
+      } catch(e) {
+        console.error("マイクアクセスエラー:", e);
+        alert("マイクの許可が得られませんでした。");
+        document.getElementById('btnRecStart').disabled = false;
+        document.getElementById('btnRecStop').disabled = true;
+      }
+    }
+
+    function stopFullRecognition() {
+      document.getElementById('btnRecStart').disabled = false;
+      document.getElementById('btnRecStop').disabled = true;
+      if(recognition && isRecording) {
+        recognition.stop();
+      }
+    }
+
+    // ==========================================
+    // ⑤ 評価分析と結果送信
+    // ==========================================
+    function analyzeAndSend(spokenText, durationMin, confidence) {
+      const originalText = document.getElementById('sentence').value;
+      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
+      
+      const totalWords = cleanOriginal.length;
+      if (totalWords === 0) return;
+
+      let matchCount = 0;
+      let rawWeakWords = [];
+      let renderedChunks = "";
+      let searchStartIndex = 0;
+      const chunks = originalText.split('/');
+
+      chunks.forEach((chunk, index) => {
+        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
+        if (words.length === 0) return;
+        if (index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
+        words.forEach(w => {
+          const lowerW = w
