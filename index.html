@@ -77,6 +77,38 @@
     .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
     .wpm-info-box { background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af; margin-bottom: 14px; }
     
+    /* 録音波形表示エリア */
+    #visualizer {
+      width: 100%;
+      height: 50px;
+      background: #0f172a;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* 自分の音声再生ボックス */
+    .self-audio-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .self-audio-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #166534;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .weak-practice-box {
       background: #fff1f2;
       border: 1px solid #fecdd3;
@@ -102,11 +134,27 @@
       border-radius: 8px;
       border: 1px solid #fda4af;
       margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .weak-word-info {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
     }
     .weak-word-text {
       font-weight: 800;
       font-size: 16px;
       color: #dc2626;
+    }
+    .phonetic-text {
+      font-size: 13px;
+      color: #0284c7;
+      font-family: monospace;
+      font-weight: 600;
+      background: #e0f2fe;
+      padding: 1px 6px;
+      border-radius: 4px;
     }
     .weak-word-actions {
       display: flex;
@@ -125,12 +173,10 @@
     <h1>英語音読トレーニング</h1>
     <div class="sub-message">〜 相手に「伝わる英語」と「適正スピード」を目指そう！ 〜</div>
   </div>
-
   <div class="card" style="background: #f0f9ff; border-color: #bae6fd;">
     <label for="studentId">生徒ID（半角4桁／入力必須）</label>
     <input type="text" id="studentId" placeholder="例: 1459" maxlength="4" oninput="saveStudentId()">
   </div>
-
   <div class="card">
     <h2>
       <span>原稿の準備</span>
@@ -155,7 +201,6 @@
           <div id="ocrStatus" style="font-weight:600; color:var(--primary); font-size:12.5px; margin-top:4px;"></div>
         </div>
       </div>
-
       <!-- 右：配信課題 -->
       <div class="script-box active" id="boxTeacher">
         <div class="script-box-title">
@@ -198,11 +243,20 @@
         <button class="btn-success" id="btnRecStart" onclick="startFullRecognition()">録音開始</button>
         <button class="btn-danger" id="btnRecStop" onclick="stopFullRecognition()" disabled>録音終了</button>
       </div>
+      <!-- 音声波形表示用 Canvas -->
+      <canvas id="visualizer"></canvas>
     </div>
   </div>
   
   <div class="card" id="resultArea" style="display:none; margin-top: 16px;">
     <h2>評価結果分析</h2>
+    
+    <!-- 自分の録音音声再生エリア -->
+    <div class="self-audio-box" id="selfAudioContainer" style="display: none;">
+      <div class="self-audio-title">🎙️ 自分の録音を聞いてセルフチェック</div>
+      <audio id="selfAudioPlayer" controls style="height: 36px; max-width: 300px;"></audio>
+    </div>
+
     <div class="wpm-info-box">
       ⚡ <strong>WPM（Words Per Minute）とは？</strong><br>
       1分間に読める単語数を示します。高校生の目標スピードは <strong>100〜130 WPM</strong> です。速読力とリスニング力に直結します！
@@ -218,14 +272,11 @@
     // ==========================================
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxIX_Yqm2Qsb2EPnYpSwXXn_3fRiyVCBUCS0wPkbeGS_nuDM4ojKYGeKuw99RDEk9Xc/exec";
     let currentMode = 'teacher';
-
     window.onload = async function() {
       const savedId = localStorage.getItem("studentId");
       if(savedId) document.getElementById("studentId").value = savedId;
-
       const taskSelect = document.getElementById("taskSelect");
       const categorySelect = document.getElementById("originalCategorySelect");
-
       try {
         const response = await fetch(GAS_WEB_APP_URL);
         if (!response.ok) throw new Error("HTTP Error " + response.status);
@@ -255,17 +306,14 @@
         if (categorySelect) categorySelect.innerHTML = '<option value="">(カテゴリを選択)</option>';
       }
     };
-
     function saveStudentId() {
       localStorage.setItem("studentId", document.getElementById("studentId").value);
     }
-
     function setScriptMode(mode) {
       currentMode = mode;
       document.getElementById('boxOriginal').classList.toggle('active', mode === 'original');
       document.getElementById('boxTeacher').classList.toggle('active', mode === 'teacher');
     }
-
     function onTaskChange() {
       if(currentMode === 'teacher') {
         document.getElementById('sentence').value = document.getElementById('taskSelect').value;
@@ -278,24 +326,19 @@
     function applyAutoChunking() {
       let text = document.getElementById('sentence').value;
       if (!text) return alert("英文が入力されていません。");
-
       text = text.replace(/\s*\/\s*/g, ' ');
       text = text.replace(/([,;:?!.])\s+/g, '$1 / ');
-
       const keywords = [
         "in", "on", "at", "to", "for", "with", "by", "from", "of", "about", "into", "through", "during", "before", "after",
         "because", "when", "if", "and", "but", "or", "so", "which", "who", "that", "where", "while", "although"
       ];
-
       keywords.forEach(function(kw) {
         const regex = new RegExp("\\s+(" + kw + ")\\s+", "gi");
         text = text.replace(regex, " / $1 ");
       });
-
       text = text.replace(/\/\s*\//g, '/').replace(/\s+/g, ' ').replace(/\s*\/\s*/g, ' / ').trim();
       document.getElementById('sentence').value = text;
     }
-
     async function processImage(input) {
       if (!input.files || input.files.length === 0) return;
       document.getElementById('modeRadioOriginal').checked = true;
@@ -305,300 +348,4 @@
       try {
         const result = await Tesseract.recognize(input.files[0], 'eng');
         document.getElementById('sentence').value = result.data.text.replace(/\n/g, ' ');
-        status.innerText = "✅ 読み取り完了！";
-      } catch(err) {
-        status.innerText = "❌ エラーが発生しました";
-      }
-    }
-
-    // ==========================================
-    // ③ 音声再生（お手本） API
-    // ==========================================
-    let synth = window.speechSynthesis;
-    function playFullAudio() {
-      stopAudio();
-      let text = document.getElementById('sentence').value.replace(/\//g, '');
-      if(!text) return alert("英文を入力してください");
-      let utterThis = new SpeechSynthesisUtterance(text);
-      utterThis.lang = 'en-US';
-      utterThis.rate = parseFloat(document.getElementById('speechRate').value);
-      utterThis.onend = () => document.getElementById('btnAudioStop').disabled = true;
-      document.getElementById('btnAudioStop').disabled = false;
-      synth.speak(utterThis);
-    }
-    function stopAudio() {
-      if(synth) synth.cancel();
-      document.getElementById('btnAudioStop').disabled = true;
-    }
-
-    function playSingleWord(word) {
-      if(synth) synth.cancel();
-      let utterThis = new SpeechSynthesisUtterance(word);
-      utterThis.lang = 'en-US';
-      utterThis.rate = 0.8;
-      synth.speak(utterThis);
-    }
-
-    // ==========================================
-    // ④ 音声認識 ＆ 安定型スコアリングシステム
-    // ==========================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    let startTime = 0;
-    let accumulatedText = "";
-    let accumulatedConfidence = [];
-    let isRecording = false;
-
-    if(recognition) {
-      recognition.lang = 'en-US';
-      recognition.continuous = true;
-      recognition.interimResults = false;
-
-      recognition.onresult = function(event) {
-        accumulatedText = "";
-        accumulatedConfidence = [];
-        for (let i = 0; i < event.results.length; i++) {
-          accumulatedText += event.results[i][0].transcript + " ";
-          if (event.results[i][0].confidence) {
-            accumulatedConfidence.push(event.results[i][0].confidence);
-          }
-        }
-      };
-
-      recognition.onerror = function(event) {
-        console.error("音声認識エラー:", event.error);
-        if(event.error === 'not-allowed') {
-          alert("マイクの使用が許可されていません。ブラウザのマイク設定をご確認ください。");
-        }
-      };
-
-      recognition.onend = function() {
-        if (!isRecording) return;
-        isRecording = false;
-        
-        let durationMin = (Date.now() - startTime) / 1000 / 60;
-        let avgConfidence = 0.85;
-        if (accumulatedConfidence.length > 0) {
-          avgConfidence = accumulatedConfidence.reduce((a, b) => a + b, 0) / accumulatedConfidence.length;
-        }
-
-        if (!accumulatedText.trim()) {
-          alert("音声が認識できませんでした。マイクの許可を確認し、もう一度はっきりと発音してください。");
-          return;
-        }
-
-        analyzeAndSend(accumulatedText.trim(), Math.max(durationMin, 0.01), avgConfidence);
-      };
-    }
-
-    function startFullRecognition() {
-      if(!document.getElementById('sentence').value) return alert("英文を入力してください。");
-      const sid = document.getElementById('studentId').value;
-      if(sid.length !== 4) return alert("生徒IDを半角数字4桁で入力してください。");
-      
-      document.getElementById('resultArea').style.display = 'none';
-      document.getElementById('btnRecStart').disabled = true;
-      document.getElementById('btnRecStop').disabled = false;
-      
-      accumulatedText = "";
-      accumulatedConfidence = [];
-      isRecording = true;
-      startTime = Date.now();
-      
-      try {
-        recognition.start();
-      } catch(e) {
-        console.error(e);
-      }
-    }
-
-    function stopFullRecognition() {
-      document.getElementById('btnRecStart').disabled = false;
-      document.getElementById('btnRecStop').disabled = true;
-      if(recognition && isRecording) {
-        recognition.stop();
-      }
-    }
-
-   function analyzeAndSend(spokenText, durationMin, confidence) {
-      const originalText = document.getElementById('sentence').value;
-      const cleanOriginal = originalText.replace(/\//g, '').replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
-      const cleanSpoken = spokenText.replace(/[.,?!]/g, '').toLowerCase().split(/\s+/).filter(w=>w);
-      
-      const totalWords = cleanOriginal.length;
-      if (totalWords === 0) return;
-
-      // 語順を考慮した単語一致チェック
-      let matchCount = 0;
-      let rawWeakWords = [];
-      let renderedChunks = "";
-      let searchStartIndex = 0;
-
-      const chunks = originalText.split('/');
-      chunks.forEach((chunk, index) => {
-        const words = chunk.replace(/[.,?!]/g, '').trim().split(/\s+/).filter(w=>w);
-        if (words.length === 0) return;
-        if (index > 0) renderedChunks += `<span class="chunk-divider">/</span>`;
-
-        words.forEach(w => {
-          const lowerW = w.toLowerCase();
-          const foundIndex = cleanSpoken.indexOf(lowerW, searchStartIndex);
-
-          if (foundIndex !== -1) {
-            matchCount++;
-            searchStartIndex = foundIndex + 1;
-            renderedChunks += `<span class="word word-perfect">${w}</span>`;
-          } else {
-            rawWeakWords.push(w);
-            renderedChunks += `<span class="word word-again">${w}</span>`;
-          }
-        });
-      });
-
-      // ★ 発音明瞭度を直接スコアに反映（一致率 × 明瞭度）
-      const wordMatchRate = matchCount / totalWords; // 1.0 (100%)
-      const confidencePercent = Math.round(confidence * 100); // 例: 96%
-      const finalScore = Math.min(100, Math.max(0, Math.round(wordMatchRate * confidencePercent)));
-
-      // WPM（読書スピード）計算
-      const wpm = Math.round(cleanSpoken.length / durationMin);
-      let wpmBadge = "badge-target", wpmText = "目標スピード";
-      if (wpm < 100) { wpmBadge = "badge-slow"; wpmText = "ゆっくり"; }
-      if (wpm > 130) { wpmBadge = "badge-fast"; wpmText = "速すぎ"; }
-
-      // 画面表示の更新（発音明瞭度＝メインスコア）
-      document.getElementById('resultContent').innerHTML = `
-        <div class="metric-card">
-          <div class="metric-label">発音・伝わる度スコア</div>
-          <div class="metric-value">${finalScore}<span class="metric-unit">点 / 100</span></div>
-          <div style="font-size:10.5px; color:#64748b; margin-top:3px; font-weight:600;">発音明瞭度: ${confidencePercent}%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label">スピード (WPM)</div>
-          <div class="metric-value">${wpm}<span class="metric-unit">語/分</span></div>
-          <div class="wpm-badge ${wpmBadge}">${wpmText}</div>
-        </div>
-      `;
-
-      document.getElementById('chunkResultArea').innerHTML = `
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background: var(--color-perfect)"></div>伝わった単語</div>
-          <div class="legend-item"><div class="legend-dot" style="background: var(--color-again)"></div>惜しい・要練習</div>
-        </div>
-        <div style="line-height: 2;">${renderedChunks}</div>
-      `;
-
-      // 苦手単語トレーニングUI生成
-      const uniqueWeakWords = [...new Set(rawWeakWords.map(w => w.replace(/[.,?!]/g, '').toLowerCase()))];
-      renderWeakWordsPractice(uniqueWeakWords);
-
-      document.getElementById('resultArea').style.display = 'block';
-
-      // GASスプレッドシートへ自動送信
-      const sid = document.getElementById('studentId').value;
-      let tName = currentMode === 'teacher' 
-        ? document.getElementById('taskSelect').options[document.getElementById('taskSelect').selectedIndex]?.text 
-        : document.getElementById('originalCategorySelect').value;
-      
-      fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          studentId: sid,
-          mode: currentMode === 'teacher' ? '配信課題' : 'オリジナル',
-          taskName: tName || "未設定",
-          originalText: originalText,
-          spokenText: spokenText,
-          score: finalScore,
-          weakWords: uniqueWeakWords.slice(0, 5)
-        })
-      }).catch(err => console.error("送信エラー:", err));
-    }
-
-    // ==========================================
-    // ⑤ 苦手単語トレーニング システム
-    // ==========================================
-    function renderWeakWordsPractice(weakWords) {
-      const container = document.getElementById('weakWordsPracticeArea');
-      if (weakWords.length === 0) {
-        container.innerHTML = `
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin-top: 16px; text-align: center; color: #15803d; font-weight: 700;">
-            🎉 素晴らしい！すべての単語が綺麗に伝わりました！
-          </div>`;
-        return;
-      }
-
-      let html = `
-        <div class="weak-practice-box">
-          <div class="weak-practice-title">
-            <span>🔥 苦手単語トレーニング (${weakWords.length}語)</span>
-            <button class="btn-sub btn-mini" onclick="setWeakWordsToSentence(['${weakWords.join("','")}'])">💡 苦手単語だけを原稿にセット</button>
-          </div>
-      `;
-
-      weakWords.forEach((word, idx) => {
-        html += `
-          <div class="weak-word-item">
-            <span class="weak-word-text">${word}</span>
-            <div class="weak-word-actions">
-              <button class="btn-sub btn-mini" onclick="playSingleWord('${word}')">🔊 お手本</button>
-              <button class="btn-primary btn-mini" id="btnTest_${idx}" onclick="testSingleWord('${word}', 'btnTest_${idx}')">🎙️ 発音チェック</button>
-            </div>
-          </div>
-        `;
-      });
-
-      html += `</div>`;
-      container.innerHTML = html;
-    }
-
-    function testSingleWord(targetWord, btnId) {
-      if (!SpeechRecognition) return alert("お使いのブラウザは音声認識に対応していません。");
-      
-      const singleRec = new SpeechRecognition();
-      singleRec.lang = 'en-US';
-      singleRec.continuous = false;
-      
-      const btnEl = document.getElementById(btnId);
-      btnEl.innerText = "🎙️ 発音してください...";
-      btnEl.disabled = true;
-      
-      singleRec.start();
-      
-      singleRec.onresult = function(event) {
-        const spoken = event.results[0][0].transcript.trim().toLowerCase().replace(/[.,?!]/g, '');
-        const target = targetWord.toLowerCase();
-        
-        if (spoken.includes(target) || target.includes(spoken)) {
-          btnEl.innerText = "🎉 PASS!";
-          btnEl.style.background = "#16a34a";
-          btnEl.style.color = "#ffffff";
-        } else {
-          btnEl.innerText = `❌ (${spoken}) もう一度`;
-          btnEl.style.background = "#dc2626";
-          btnEl.style.color = "#ffffff";
-          btnEl.disabled = false;
-        }
-      };
-
-      singleRec.onerror = function() {
-        btnEl.innerText = "❌ エラー";
-        btnEl.disabled = false;
-      };
-
-      singleRec.onend = function() {
-        if (btnEl.innerText.includes("発音してください")) {
-          btnEl.innerText = "❌ もう一度";
-          btnEl.disabled = false;
-        }
-      };
-    }
-
-    function setWeakWordsToSentence(weakWordsArray) {
-      if (weakWordsArray.length === 0) return;
-      document.getElementById('sentence').value = weakWordsArray.join(' / ');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  </script>
-</body>
-</html>
+        status.innerText = "✅
